@@ -98,7 +98,7 @@ All four must be clean before a commit, matching the repository's rule for the P
 
 ## Sample reports
 
-`fixtures/` holds four real reports, produced by serving this repository's own fixture pages on
+`fixtures/` holds five real reports, produced by serving this repository's own fixture pages on
 loopback and running the CLI against them:
 
 | File | Made by |
@@ -107,6 +107,7 @@ loopback and running the CLI against them:
 | `scan-index.json` | `scan` of that site's index page |
 | `scan-contrast.json` | `scan` of `tests/fixtures/pages/1.4.3-contrast-minimum.html` |
 | `scan-non-text-contrast.json` | `scan` of `tests/fixtures/pages/1.4.11-non-text-contrast.html` |
+| `scan-keyboard-trap.json` | `scan` of `tests/fixtures/pages/2.1.2-keyboard-trap.html` — rule `no-keyboard-trap` 1.1.0 or later, which records the focus order and what focus never reached |
 
 The tests assert the counts these particular files contain, so they are a regression test of the
 mapping rather than a restatement of it. Regenerating them is deliberate:
@@ -115,6 +116,9 @@ mapping rather than a restatement of it. Regenerating them is deliberate:
 cd tests/fixtures/sites/small-site && python -m http.server 8000     # terminal 1
 uv run accesslens crawl http://127.0.0.1:8000/ --delay-ms 0 > web/fixtures/crawl-small-site.json
 uv run accesslens scan http://127.0.0.1:8000/index.html > web/fixtures/scan-index.json
+
+cd tests/fixtures/pages && python -m http.server 8001                # terminal 2
+uv run accesslens scan http://127.0.0.1:8001/2.1.2-keyboard-trap.html > web/fixtures/scan-keyboard-trap.json
 ```
 
 Tests never touch the live web — a project rule.

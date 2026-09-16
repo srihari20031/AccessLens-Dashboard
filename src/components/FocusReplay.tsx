@@ -80,10 +80,11 @@ export function FocusReplay({ data }: { data: FocusReplayData }) {
         {loopStart >= 0 ? `, then went back to stop ${loopStart + 1} and kept circling` : ''}.
       </p>
 
-      <ol className="focus-replay__stops">
+      {/* role="list": list-style none drops list semantics in WebKit. */}
+      <ol className="focus-replay__stops" role="list">
         {data.stops.map((stop, index) => (
           <li
-            key={stop.selector}
+            key={`${index}:${stop.selector}`}
             ref={(element) => {
               itemRefs.current[index] = element;
             }}
@@ -91,7 +92,7 @@ export function FocusReplay({ data }: { data: FocusReplayData }) {
             data-loop={inLoop.has(stop.selector)}
             aria-current={index === current ? 'step' : undefined}
           >
-            <span className="focus-replay__num">{String(index + 1).padStart(2, '0')}</span>
+            <span className="focus-replay__num" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
             <div>
               <span className="focus-replay__name">{describeTarget(stop)}</span>
               {inLoop.has(stop.selector) ? (
@@ -107,10 +108,14 @@ export function FocusReplay({ data }: { data: FocusReplayData }) {
 
       {data.unreached.length > 0 ? (
         <div className="focus-replay__unreached">
-          <h5 className="small">Never receives focus</h5>
-          <ul>
-            {data.unreached.map((target) => (
-              <li key={target.selector}>
+          <h5 className="small">
+            {data.reason === 'dialog-cycle'
+              ? 'Not reached while focus stayed in the dialog'
+              : 'Never receives focus'}
+          </h5>
+          <ul role="list">
+            {data.unreached.map((target, index) => (
+              <li key={`${index}:${target.selector}`}>
                 <span className="focus-replay__name">{describeTarget(target)}</span>
                 <code className="focus-replay__selector mono xsmall muted">{target.selector}</code>
               </li>

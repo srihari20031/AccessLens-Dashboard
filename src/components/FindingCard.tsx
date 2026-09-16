@@ -16,8 +16,10 @@ import { FocusReplay } from './FocusReplay';
  */
 export function FindingCard({ finding }: { finding: FindingRow }) {
   const replay = readFocusReplay(finding);
+  // Only a replay that will actually render takes the evidence keys it replaces.
+  const showReplay = replay !== null && replay.stops.length > 0;
   const evidence = Object.entries(finding.evidence).filter(
-    ([key]) => replay === null || !REPLAY_EVIDENCE_KEYS.includes(key),
+    ([key]) => !showReplay || !REPLAY_EVIDENCE_KEYS.includes(key),
   );
   const pages = finding.pages;
 
@@ -58,7 +60,7 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
         </>
       ) : null}
 
-      {replay !== null ? <FocusReplay data={replay} /> : null}
+      {showReplay ? <FocusReplay data={replay} /> : null}
 
       <SourceLine location={finding.source_location} />
 
