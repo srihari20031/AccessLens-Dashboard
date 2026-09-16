@@ -22,6 +22,10 @@ most of the design decisions below follow from it.
 - **About** (public) — the pipeline with what is built today, the three defining decisions, and
   what each kind of target supports.
 - Each finding shows its **source location**, or says plainly that it is not mapped.
+- A **keyboard trap finding (2.1.2)** shows the focus order the scanner recorded: every stop
+  in order, the loop focus got caught in, and the elements it never reached, with Replay and
+  Step controls. It needs reports from rule `no-keyboard-trap` 1.1.0 or later; older reports
+  show the raw evidence as before.
 
 It does **not** run scans. Chromium does not run on a typical Next.js host, so starting a scan
 from the browser is out of scope; the CLI is the only way to produce a report.

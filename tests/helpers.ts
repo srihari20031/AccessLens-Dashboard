@@ -17,6 +17,7 @@ export const FIXTURES = {
   scanContrast: 'scan-contrast.json',
   scanNonTextContrast: 'scan-non-text-contrast.json',
   crawlSmallSite: 'crawl-small-site.json',
+  scanKeyboardTrap: 'scan-keyboard-trap.json',
 } as const;
 
 export type FixtureName = keyof typeof FIXTURES;

@@ -29,6 +29,10 @@ const FIXTURES = {
     name: 'Scan of the 1.4.11 non-text contrast fixture page',
   },
   index: { file: 'scan-index.json', name: 'Scan of the small-site index page' },
+  'keyboard-trap': {
+    file: 'scan-keyboard-trap.json',
+    name: 'Scan of the 2.1.2 keyboard trap fixture page',
+  },
 } as const;
 
 type FixtureKey = keyof typeof FIXTURES;

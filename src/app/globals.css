@@ -727,3 +727,74 @@ input[type='file'] {
   border-style: dashed;
   color: var(--ink-soft);
 }
+
+/* ---------------------------------------------------------------- focus replay
+
+   An ordered list first; the highlight is the only thing JavaScript adds. Loop stops carry
+   the finding's band colour on their edge and say "in the loop" in words. */
+
+.focus-replay {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--rule);
+}
+
+.focus-replay__stops {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.focus-replay__stop {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--rule);
+  border-radius: 2px;
+}
+
+.focus-replay__stop[data-loop='true'] {
+  border-left-color: var(--band, var(--rule-strong));
+}
+
+.focus-replay__stop[aria-current='step'] {
+  background: var(--accent-wash);
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.focus-replay__num {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 600;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-replay__name {
+  font-weight: 600;
+}
+
+.focus-replay__note {
+  font-size: var(--size-xs);
+  color: var(--ink-soft);
+}
+
+.focus-replay__selector {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.focus-replay__unreached {
+  margin-top: var(--space-3);
+}
+
+.focus-replay__unreached ul {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-5);
+}

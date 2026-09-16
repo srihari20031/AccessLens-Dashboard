@@ -1,8 +1,10 @@
 import { OUTCOME_LABELS } from '@/lib/report/bands';
+import { readFocusReplay, REPLAY_EVIDENCE_KEYS } from '@/lib/report/focus';
 import type { FindingRow } from '@/lib/report/map';
 import { formatEvidenceKey, formatEvidenceValue, pluralise } from '@/lib/format';
 
 import { BandTag } from './BandStrip';
+import { FocusReplay } from './FocusReplay';
 
 /**
  * One finding.
@@ -13,7 +15,10 @@ import { BandTag } from './BandStrip';
  * `dangerouslySetInnerHTML` anywhere in this project.
  */
 export function FindingCard({ finding }: { finding: FindingRow }) {
-  const evidence = Object.entries(finding.evidence);
+  const replay = readFocusReplay(finding);
+  const evidence = Object.entries(finding.evidence).filter(
+    ([key]) => replay === null || !REPLAY_EVIDENCE_KEYS.includes(key),
+  );
   const pages = finding.pages;
 
   return (
@@ -52,6 +57,8 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
           </dl>
         </>
       ) : null}
+
+      {replay !== null ? <FocusReplay data={replay} /> : null}
 
       <SourceLine location={finding.source_location} />
 
