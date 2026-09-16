@@ -1,0 +1,146 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+
+import { SetupNotice } from '@/components/SetupNotice';
+import { listRuns } from '@/lib/db/runs';
+import { BANDS, BAND_LABELS } from '@/lib/report/bands';
+import { formatDateTime } from '@/lib/format';
+import { historyHref } from '@/lib/links';
+import { numberRuns } from '@/lib/report/history';
+import { isConfigured } from '@/lib/supabase/config';
+
+import { UploadForm } from './UploadForm';
+import { removeRun } from './actions';
+
+export const metadata: Metadata = { title: 'Runs' };
+
+/*
+ * Never prerendered. These pages show one user's data, and what they show depends on the
+ * session cookie. Without this, a build made before Supabase was configured renders the
+ * setup notice and bakes it in as static — and a page of per-user data that can be
+ * prerendered at all is a bug waiting to happen.
+ */
+export const dynamic = 'force-dynamic';
+
+
+export default async function RunsPage() {
+  if (!isConfigured()) return <SetupNotice />;
+
+  const runs = await listRuns();
+  const numbers = numberRuns(runs);
+
+  return (
+    <div className="stack">
+      <div className="page-head">
+        <div className="stack-tight">
+          <h1>Runs</h1>
+          <p className="lede">
+            Every report you have uploaded, newest first. Counts are severity bands — there is no
+            score here, and no badge.
+          </p>
+        </div>
+        {runs.length > 1 ? (
+          <Link href="/compare" className="button button--quiet">
+            Compare two runs
+          </Link>
+        ) : null}
+      </div>
+
+      <UploadForm />
+
+      {runs.length === 0 ? (
+        <div className="sheet">
+          <div className="empty stack-tight">
+            <h2>No runs yet</h2>
+            <p className="prose muted">Produce a report on the command line, then upload it above:</p>
+            <code className="code-well">
+              uv run accesslens crawl https://example.com --i-have-permission &gt; crawl.json
+            </code>
+            <p className="prose muted small">
+              For a single page, <code className="mono">uv run accesslens scan &lt;url&gt;</code>.
+              Scans run in real Chromium, which is why they stay on the command line rather than
+              being started from this page.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <section aria-labelledby="runs-heading" className="stack-tight">
+          <h2 id="runs-heading" className="visually-hidden">
+            Your runs
+          </h2>
+          <div className="sheet table-scroll">
+            <table className="data-table">
+              <caption className="visually-hidden">
+                Uploaded runs with their severity band counts
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Run</th>
+                  <th scope="col">Kind</th>
+                  {BANDS.map((band) => (
+                    <th key={band} scope="col" className="num">
+                      <span className={`band-${band}`} style={{ color: 'var(--band)' }}>
+                        {BAND_LABELS[band]}
+                      </span>
+                    </th>
+                  ))}
+                  <th scope="col">Uploaded</th>
+                  <th scope="col">
+                    <span className="visually-hidden">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {runs.map((run) => (
+                  <tr key={run.id}>
+                    <th scope="row" style={{ fontWeight: 400 }}>
+                      <Link href={`/runs/${run.id}`} style={{ fontWeight: 600 }}>
+                        {run.label ?? run.target_url}
+                      </Link>
+                      {run.label !== null ? (
+                        <div className="mono xsmall muted">{run.target_url}</div>
+                      ) : null}
+                      <div className="xsmall muted">
+                        Run #{numbers.get(run.id)} of this site ·{' '}
+                        <Link href={historyHref(run)}>
+                          history
+                          <span className="visually-hidden">
+                            {' '}
+                            of {run.kind} runs of {run.target_url}
+                          </span>
+                        </Link> · accesslens{' '}
+                        {run.tool_version}
+                      </div>
+                    </th>
+                    <td>{run.kind === 'crawl' ? 'Crawl' : 'Scan'}</td>
+                    {BANDS.map((band) => (
+                      <td key={band} className="num">
+                        {run.site_bands[band]}
+                      </td>
+                    ))}
+                    <td>{formatDateTime(run.created_at)}</td>
+                    <td>
+                      <details>
+                        <summary className="small">Delete</summary>
+                        <form action={removeRun} style={{ marginTop: 'var(--space-2)' }}>
+                          <input type="hidden" name="id" value={run.id} />
+                          <button type="submit" className="button button--danger">
+                            Delete this run
+                          </button>
+                        </form>
+                      </details>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="small muted prose">
+            Deleting a run removes its pages and findings with it. It cannot be undone — the report
+            file on your machine is the only other copy.
+          </p>
+        </section>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,729 @@
+@import 'tailwindcss';
+
+/*
+  AccessLens dashboard — design tokens.
+
+  Every colour pair used for text is checked against WCAG 1.4.3 (4.5:1 for body text) and
+  every border that carries meaning against 1.4.11 (3:1). The measured ratios are in comments
+  and in web/README.md. A tool that reports contrast failures has to survive its own rule.
+
+  The four band colours are deliberately not a single red-to-amber ramp. Critical, serious and
+  moderate sit on one ramp because they are degrees of the same thing — a confirmed failure.
+  "Needs manual review" is violet, off that ramp entirely, because it is not a lesser failure;
+  it is a different kind of result. Colour is never the only signal: every band is written out
+  in words beside its count.
+
+  Passes get no colour at all. A green "pass" badge is exactly the reassurance this project
+  refuses to give: the automated checks not firing is not evidence of conformance.
+*/
+
+:root {
+  color-scheme: light;
+
+  --ground: #e9ecf1; /* page ground */
+  --sheet: #ffffff; /* report surface */
+  --ink: #1a2230; /* body text — 15.97:1 on sheet, 13.48:1 on ground */
+  --ink-soft: #4a5567; /* secondary text — 7.54:1 on sheet, 6.36:1 on ground */
+  --rule: #c7ceda; /* hairlines */
+  --rule-strong: #737f92; /* borders that carry meaning, incl. form controls (1.4.11) — 4.05:1 on sheet, 3.42:1 on ground */
+  --accent: #0e5c6b; /* links, focus — 7.60:1 on sheet, 6.42:1 against ground */
+  --accent-wash: #e3f0f2;
+
+  --band-critical: #8e1b2b; /* 8.97:1 on sheet */
+  --band-serious: #a24b07; /* 5.92:1 on sheet */
+  --band-moderate: #6a5b12; /* 6.73:1 on sheet */
+  --band-review: #52368f; /* 9.20:1 on sheet */
+
+  --wash-critical: #fbeaec;
+  --wash-serious: #fbeee4;
+  --wash-moderate: #f6f2e0;
+  --wash-review: #eeeaf7;
+
+  /* Major-third scale from a 16px base. */
+  --size-xs: 0.8rem;
+  --size-s: 0.9rem;
+  --size-base: 1rem;
+  --size-m: 1.25rem;
+  --size-l: 1.5625rem;
+  --size-xl: 1.953rem;
+  --size-xxl: 2.441rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  --measure: 68ch;
+  --shell: 74rem;
+}
+
+html {
+  background: var(--ground);
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+  font-size: var(--size-base);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+code,
+kbd,
+samp,
+pre,
+.mono {
+  font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+}
+
+/* ---------------------------------------------------------------- focus
+
+   One indicator everywhere, drawn in the accent with a sheet-coloured gap so it stays
+   visible on the ground, on the sheet and on top of a band wash. Never removed. */
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--space-4);
+  top: var(--space-2);
+  z-index: 10;
+  padding: var(--space-2) var(--space-4);
+  background: var(--sheet);
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* ---------------------------------------------------------------- shell */
+
+.shell {
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+}
+
+.site-header {
+  border-bottom: 1px solid var(--rule-strong);
+  background: var(--sheet);
+}
+
+.site-header__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-5);
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-4);
+}
+
+.wordmark {
+  font-size: var(--size-m);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.wordmark:hover {
+  color: var(--accent);
+}
+
+.site-nav {
+  display: flex;
+  gap: var(--space-4);
+  margin-inline-end: auto;
+}
+
+.site-nav a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.site-nav a:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.site-nav a[aria-current='page'] {
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom-color: var(--ink);
+}
+
+main {
+  padding-block: var(--space-6) var(--space-7);
+}
+
+.site-footer {
+  border-top: 1px solid var(--rule);
+  color: var(--ink-soft);
+  font-size: var(--size-s);
+  padding-block: var(--space-5);
+}
+
+/* ---------------------------------------------------------------- type */
+
+h1 {
+  font-size: var(--size-xl);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1.15;
+}
+
+h2 {
+  font-size: var(--size-m);
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.25;
+}
+
+h3 {
+  font-size: var(--size-base);
+  font-weight: 600;
+}
+
+.lede {
+  max-width: var(--measure);
+  color: var(--ink-soft);
+}
+
+.prose {
+  max-width: var(--measure);
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.muted {
+  color: var(--ink-soft);
+}
+
+.small {
+  font-size: var(--size-s);
+}
+
+.xsmall {
+  font-size: var(--size-xs);
+}
+
+/* ---------------------------------------------------------------- surfaces */
+
+.sheet {
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+
+.sheet > * + * {
+  border-top: 1px solid var(--rule);
+}
+
+.sheet__body {
+  padding: var(--space-5);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.stack-tight {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-4);
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+/* ---------------------------------------------------------------- band strip
+
+   The one loud element on the page. Four segments on a single rule, each with the band's
+   word above its count, and a thick coloured edge on top. In greyscale the words still
+   carry it, which is the point. */
+
+.band-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+
+.band-strip__cell {
+  padding: var(--space-4) var(--space-4) var(--space-5);
+  border-left: 1px solid var(--rule);
+  border-top: 4px solid var(--band, var(--rule-strong));
+}
+
+.band-strip__cell:first-child {
+  border-left: 0;
+}
+
+.band-strip__name {
+  font-size: var(--size-s);
+  font-weight: 600;
+  color: var(--band, var(--ink));
+}
+
+.band-strip__count {
+  font-size: var(--size-xxl);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.band-strip__count[data-zero='true'] {
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+.band-strip__delta {
+  margin-top: var(--space-1);
+  font-size: var(--size-xs);
+  color: var(--ink-soft);
+}
+
+@media (max-width: 52rem) {
+  .band-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .band-strip__cell:nth-child(3) {
+    border-left: 0;
+  }
+}
+
+.band-critical {
+  --band: var(--band-critical);
+  --wash: var(--wash-critical);
+}
+
+.band-serious {
+  --band: var(--band-serious);
+  --wash: var(--wash-serious);
+}
+
+.band-moderate {
+  --band: var(--band-moderate);
+  --wash: var(--wash-moderate);
+}
+
+.band-needs-manual-review {
+  --band: var(--band-review);
+  --wash: var(--wash-review);
+}
+
+/* A band written out: colour plus the word, never colour on its own. */
+.band-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 2px var(--space-2);
+  background: var(--wash, var(--ground));
+  border: 1px solid var(--band, var(--rule-strong));
+  border-radius: 2px;
+  color: var(--band, var(--ink));
+  font-size: var(--size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- findings */
+
+.finding {
+  padding: var(--space-5);
+  border-left: 4px solid var(--band, var(--rule-strong));
+}
+
+.finding + .finding {
+  border-top: 1px solid var(--rule);
+}
+
+.finding__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.finding__criterion {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.finding__message {
+  max-width: var(--measure);
+  margin-bottom: var(--space-3);
+}
+
+.code-well {
+  display: block;
+  overflow-x: auto;
+  padding: var(--space-2) var(--space-3);
+  background: var(--ground);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-size: var(--size-s);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.evidence {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  font-size: var(--size-s);
+}
+
+.evidence dt {
+  color: var(--ink-soft);
+}
+
+.evidence dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.pages-seen {
+  font-size: var(--size-s);
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+/* ---------------------------------------------------------------- tables */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--size-s);
+}
+
+.data-table caption {
+  text-align: left;
+  padding: var(--space-4) var(--space-5) var(--space-2);
+  color: var(--ink-soft);
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: var(--space-2) var(--space-4);
+  border-top: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+.data-table thead th {
+  border-top: 0;
+  border-bottom: 2px solid var(--rule-strong);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.data-table td.num,
+.data-table th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* ---------------------------------------------------------------- forms */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field > label,
+.filters label {
+  font-weight: 600;
+  font-size: var(--size-s);
+}
+
+.field__hint {
+  font-size: var(--size-s);
+  color: var(--ink-soft);
+}
+
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='file'],
+select {
+  font: inherit;
+  font-size: var(--size-s);
+  color: var(--ink);
+  background: var(--sheet);
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  padding: var(--space-2) var(--space-3);
+  max-width: 34rem;
+}
+
+input[type='file'] {
+  padding: var(--space-2);
+}
+
+.button {
+  display: inline-block;
+  font: inherit;
+  font-weight: 600;
+  font-size: var(--size-s);
+  padding: var(--space-2) var(--space-4);
+  border-radius: 2px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--sheet);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.button:hover {
+  background: #0a4753;
+  border-color: #0a4753;
+}
+
+.button--quiet {
+  background: var(--sheet);
+  color: var(--accent);
+}
+
+.button--quiet:hover {
+  background: var(--accent-wash);
+}
+
+.button--danger {
+  background: var(--sheet);
+  border-color: var(--band-critical);
+  color: var(--band-critical);
+}
+
+.button--danger:hover {
+  background: var(--wash-critical);
+}
+
+.button:disabled {
+  opacity: 1;
+  background: var(--ground);
+  border-color: var(--rule-strong);
+  color: var(--ink-soft);
+  cursor: not-allowed;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-end;
+}
+
+.filters .field {
+  min-width: 12rem;
+}
+
+/* ---------------------------------------------------------------- notices */
+
+.notice {
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--rule-strong);
+  border-left-width: 4px;
+  border-radius: 2px;
+  background: var(--sheet);
+}
+
+.notice h2,
+.notice h3 {
+  margin-bottom: var(--space-1);
+}
+
+.notice--error {
+  border-color: var(--band-critical);
+  background: var(--wash-critical);
+}
+
+.notice--warning {
+  border-color: var(--band-review);
+  background: var(--wash-review);
+}
+
+.notice--ok {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+
+.notice__issues {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+  font-size: var(--size-s);
+}
+
+.empty {
+  padding: var(--space-6) var(--space-5);
+  text-align: left;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* An audit tool has nothing to gain from movement. Anything that does move, stops here. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------- history chart
+
+   One small chart per band on a shared scale (see HistoryChart.tsx for why not stacked).
+   Bars take the band colour; every number and label stays in ink. */
+
+.history-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.history-chart__row {
+  display: grid;
+  grid-template-columns: 13rem minmax(0, 1fr);
+  align-items: end;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.history-chart__row + .history-chart__row {
+  border-top: 1px solid var(--rule);
+  padding-top: var(--space-4);
+}
+
+.history-chart__label {
+  font-size: var(--size-s);
+  font-weight: 600;
+  color: var(--band, var(--ink));
+  align-self: center;
+}
+
+.history-chart__plot {
+  overflow-x: auto;
+}
+
+.history-chart__bar {
+  fill: var(--band);
+}
+
+.history-chart__baseline {
+  stroke: var(--rule-strong);
+  stroke-width: 1;
+}
+
+.history-chart__value {
+  font-size: 12px;
+  fill: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.history-chart__tick {
+  font-size: 11px;
+  fill: var(--ink-soft);
+}
+
+@media (max-width: 40rem) {
+  .history-chart__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------------------------------------------------------------- about */
+
+.pipeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--space-3);
+}
+
+.decisions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: var(--space-3);
+}
+
+/* Status is written in words; the border style repeats it without relying on colour. */
+.status-tag {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  font-size: var(--size-xs);
+  font-weight: 600;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.status-tag[data-status='Built'] {
+  border-width: 2px;
+}
+
+.status-tag[data-status='Planned'] {
+  border-style: dashed;
+  color: var(--ink-soft);
+}
