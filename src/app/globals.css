@@ -132,11 +132,19 @@ pre,
 }
 
 .wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: center;
   font-size: var(--size-m);
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--ink);
   text-decoration: none;
+}
+
+.logo-mark {
+  flex: none;
 }
 
 .wordmark:hover {

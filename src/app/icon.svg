@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <style>
+    .handle { stroke: #0e5c6b; }
+    .glass { fill: #ffffff; }
+    .dark-half, .rim { fill: #1a2230; stroke: #1a2230; }
+    .rim { fill: none; }
+    @media (prefers-color-scheme: dark) {
+      .handle { stroke: #7cc4cf; }
+      .glass { fill: #121820; }
+      .dark-half { fill: #eef1f5; stroke: #eef1f5; }
+      .rim { stroke: #eef1f5; }
+    }
+  </style>
+  <line class="handle" x1="38" y1="38" x2="56" y2="56" stroke-width="9" stroke-linecap="round"/>
+  <circle class="glass" cx="26" cy="26" r="16"/>
+  <path class="dark-half" d="M26 10A16 16 0 0 0 26 42Z" stroke-width="0"/>
+  <circle class="rim" cx="26" cy="26" r="19" stroke-width="6"/>
+</svg>

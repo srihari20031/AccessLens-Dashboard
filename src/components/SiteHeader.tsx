@@ -4,6 +4,7 @@ import { signOut } from '@/app/auth/actions';
 import { isConfigured } from '@/lib/supabase/config';
 import { createClient } from '@/lib/supabase/server';
 
+import { LogoMark } from './LogoMark';
 import { SiteNav } from './SiteNav';
 import { WCAG_TARGET } from '@/lib/wcag';
 
@@ -23,6 +24,7 @@ export async function SiteHeader() {
     <header className="site-header">
       <div className="shell site-header__inner">
         <Link href={email === null ? '/sign-in' : '/runs'} className="wordmark">
+          <LogoMark />
           AccessLens
         </Link>
         {email === null ? (
