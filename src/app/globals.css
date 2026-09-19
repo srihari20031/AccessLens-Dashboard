@@ -498,6 +498,8 @@ a:hover {
 }
 
 input[type='text'],
+input[type='url'],
+input[type='number'],
 input[type='email'],
 input[type='password'],
 input[type='file'],
@@ -514,6 +516,47 @@ select {
 
 input[type='file'] {
   padding: var(--space-2);
+}
+
+input[type='number'] {
+  max-width: 8rem;
+}
+
+/* A field's own error: in words, tied to it with aria-describedby, and not colour alone. */
+.field__error {
+  font-size: var(--size-s);
+  font-weight: 600;
+  color: var(--band-critical); /* 8.97:1 on sheet */
+}
+
+.choice-group {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.choice-group > legend {
+  font-weight: 600;
+  font-size: var(--size-s);
+  padding: 0;
+  margin-bottom: var(--space-1);
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--size-s);
+}
+
+.choice input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: var(--accent);
 }
 
 .button {

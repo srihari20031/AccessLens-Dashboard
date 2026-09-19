@@ -9,6 +9,11 @@ import { historyHref } from '@/lib/links';
 import { numberRuns } from '@/lib/report/history';
 import { isConfigured } from '@/lib/supabase/config';
 
+import { listRecentJobs } from '@/lib/db/jobs';
+import { workerUrl } from '@/lib/worker';
+
+import { AuditJobs } from './AuditJobs';
+import { RunAuditForm } from './RunAuditForm';
 import { UploadForm } from './UploadForm';
 import { removeRun } from './actions';
 
@@ -26,8 +31,14 @@ export const dynamic = 'force-dynamic';
 export default async function RunsPage() {
   if (!isConfigured()) return <SetupNotice />;
 
-  const runs = await listRuns();
+  // Read per request: the page is dynamic, so connecting a worker needs no rebuild of the code.
+  const auditsEnabled = workerUrl() !== null;
+  const [runs, jobs] = await Promise.all([
+    listRuns(),
+    auditsEnabled ? listRecentJobs() : Promise.resolve(null),
+  ]);
   const numbers = numberRuns(runs);
+  const now = new Date();
 
   return (
     <div className="stack">
@@ -35,7 +46,9 @@ export default async function RunsPage() {
         <div className="stack-tight">
           <h1>Runs</h1>
           <p className="lede">
-            Every report you have uploaded, newest first. Counts are severity bands — there is no
+            {auditsEnabled
+              ? 'Every report you have uploaded or opened from an audit, newest first.'
+              : 'Every report you have uploaded, newest first.'} Counts are severity bands — there is no
             score here, and no badge.
           </p>
         </div>
@@ -45,6 +58,28 @@ export default async function RunsPage() {
           </Link>
         ) : null}
       </div>
+
+      {auditsEnabled ? (
+        <>
+          <RunAuditForm />
+          {jobs === null ? (
+            <div className="notice notice--warning">
+              <p className="small prose">
+                Audits are not set up in this database yet. Run{' '}
+                <code className="mono">supabase/migrations/0004_scan_jobs.sql</code> in the
+                Supabase SQL editor, then reload this page.
+              </p>
+            </div>
+          ) : (
+            <AuditJobs jobs={jobs} now={now} />
+          )}
+        </>
+      ) : (
+        <p className="prose small muted">
+          Scanning from the dashboard is not set up here, so scans run from the command line and
+          you upload the report below. <Link href="/about">How AccessLens works</Link>.
+        </p>
+      )}
 
       <UploadForm />
 
@@ -58,8 +93,9 @@ export default async function RunsPage() {
             </code>
             <p className="prose muted small">
               For a single page, <code className="mono">uv run accesslens scan &lt;url&gt;</code>.
-              Scans run in real Chromium, which is why they stay on the command line rather than
-              being started from this page.
+              {auditsEnabled
+                ? ' Or run an audit above, and open its results when it finishes.'
+                : ' Scans run in real Chromium, which is why they stay on the command line here.'}
             </p>
           </div>
         </div>
