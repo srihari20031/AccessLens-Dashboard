@@ -27,8 +27,12 @@ most of the design decisions below follow from it.
   Step controls. It needs reports from rule `no-keyboard-trap` 1.1.0 or later; older reports
   show the raw evidence as before.
 
-It does **not** run scans. Chromium does not run on a typical Next.js host, so starting a scan
-from the browser is out of scope; the CLI is the only way to produce a report.
+- **Run audit** (optional) — start a scan or a small crawl from the Runs page, when a scan
+  worker is connected. See [Run audit](#run-audit).
+
+The dashboard itself never runs a scan. Chromium does not run on a typical Next.js host, so a
+scan runs either on the command line or on a separate AccessLens scan worker; without a worker
+the Run audit form is hidden and the CLI is the only way to produce a report.
 
 ## Setup
 
@@ -47,6 +51,7 @@ In the Supabase SQL editor, run in order:
 supabase/migrations/0001_schema.sql          -- tables, indexes, RLS policies
 supabase/migrations/0002_import_run.sql      -- the transactional import function
 supabase/migrations/0003_source_location.sql -- keeps each finding's source location
+supabase/migrations/0004_scan_jobs.sql       -- audit jobs, only needed for Run audit
 ```
 
 `0003` is safe on a project that already has runs. Until it is applied, uploads still work
@@ -84,6 +89,51 @@ uv run accesslens crawl https://example.com --i-have-permission > crawl.json
 
 Upload `scan.json` or `crawl.json` on the Runs page. Only stdout is the report; the human summary
 on stderr is not part of it, and a file containing both will be rejected as invalid JSON.
+
+## Run audit
+
+With a scan worker connected, the Runs page shows a **Run audit** form above the upload form:
+a URL, scan (one page) or crawl (up to 20 pages, only with the "I own this site or have
+permission to crawl it" tick-box), and a list of your recent audits that refreshes itself every
+3 seconds while one is waiting or running.
+
+**Setup.**
+
+1. Run `supabase/migrations/0004_scan_jobs.sql` in the Supabase SQL editor. It adds the
+   `scan_jobs` table with row-level security (each user sees only their own jobs) and a
+   before-insert trigger that allows **one active audit per user** and **10 audits per user per
+   24 hours**. A job waiting or running for more than 30 minutes counts as stale and no longer
+   blocks. It is safe on a project that already has runs.
+2. Deploy the AccessLens scan worker (in the AccessLens repository) with the same Supabase URL
+   and anon key.
+3. Set `ACCESSLENS_WORKER_URL` to the worker's base URL, e.g. `http://127.0.0.1:8080` locally.
+   It is **server-only** — never `NEXT_PUBLIC_` — and read on each request to `/runs`.
+
+**Without the worker** (`ACCESSLENS_WORKER_URL` unset), the form and the job list are hidden and
+the Runs page says in one sentence that scans run from the command line. That is the default,
+and it is what the dashboard looks like everywhere a worker has not been set up.
+
+**How it talks to the worker.**
+
+```
+Run audit form → startAudit: zod validation → insert scan_jobs row as the user (RLS + quota)
+              → POST {ACCESSLENS_WORKER_URL}/jobs  {"job_id": "<uuid>"}
+                 Authorization: Bearer <the user's Supabase access token>
+worker        → reads the row with that token, runs the CLI, writes status/report back as the user
+Open results  → openAuditResults: parseReport → toImportPayload → import_run → sets run_id
+```
+
+- Only the job id is sent. The worker reads the URL and limits from the row, which row-level
+  security proves belongs to the caller. No service-role key exists on either side.
+- Anything but `202 Accepted` from the worker (or no answer within 10 seconds) marks the job
+  failed with the fixed message "The scan service could not be reached. Try again later."
+- A finished job's report is imported through **exactly the upload path**, so a report from the
+  worker is validated as strictly as a file from disk. The run is labelled `Audit · <url>`.
+  Opening results twice imports once: the second click only redirects, and if two clicks race,
+  the duplicate run is removed.
+- Failure messages from the worker are a fixed set of sentences, shown as text.
+- The logic is in `src/lib/audit/` (validation, status wording, the worker call), unit-tested;
+  database access is `src/lib/db/jobs.ts`.
 
 ## Checks
 
@@ -181,7 +231,8 @@ These cover the mockup's "audit history" and "since last run" parts
 Deliberately absent, because the data does not exist yet and a screen of illustrative data in
 an accessibility tool would be the overstatement the brief forbids:
 
-- **Running a scan from the browser** — Chromium does not run on a typical Next.js host.
+- **Running a scan inside the dashboard** — Chromium does not run on a typical Next.js host;
+  Run audit hands the scan to a separate worker instead, and is hidden without one.
 - **Fix review** (patch before/after, accept/edit/reject) — Phase 5; no finding has a source
   location to patch yet.
 - **AI-drafted text with a confidence value** — Phase 6c.
