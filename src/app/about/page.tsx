@@ -33,24 +33,24 @@ const STAGES: { name: string; status: Status; does: string; today: string }[] = 
   },
   {
     name: 'Rule engine',
-    status: 'Partly built',
+    status: 'Built',
     does: 'One independent rule per WCAG success criterion, each deciding pass, fail or needs manual review.',
     today:
-      'Ten of the twelve criteria in scope: 1.1.1, 1.4.3, 1.4.11, 2.1.2, 2.4.2, 2.4.4, 2.4.7, 3.1.1, 3.3.2 and 4.1.2. 1.3.1 and 2.4.1 are next. Every report lists exactly which rules ran, and at which version.',
+      'All twelve criteria in scope: 1.1.1, 1.3.1, 1.4.3, 1.4.11, 2.1.2, 2.4.1, 2.4.2, 2.4.4, 2.4.7, 3.1.1, 3.3.2 and 4.1.2. 1.3.1 is narrowed to lists, table headers, headings and radio groups. Every report lists exactly which rules ran, and at which version.',
   },
   {
     name: 'Scorer',
     status: 'Built',
     does: 'Groups findings into severity bands and compares runs.',
     today:
-      'Severity bands per page and per site. Run-over-run change is computed in this dashboard, by finding identity.',
+      'Severity bands per page and per site. Run-over-run change is computed by finding identity, in this dashboard and on the command line (accesslens diff compares two saved reports).',
   },
   {
     name: 'Reporter',
     status: 'Partly built',
     does: 'Turns findings into something a site owner can act on.',
     today:
-      'A canonical JSON report, this dashboard, and an HTML and PDF report with a plain-language explanation for every criterion that has a problem. Reviewable source patches are planned.',
+      'A canonical JSON report, this dashboard, and an HTML and PDF report with a plain-language explanation for every criterion that has a problem, a line and column for each finding when a local HTML file is scanned, and an optional section on what changed since the previous run. Reviewable source patches are planned.',
   },
 ];
 
@@ -95,15 +95,17 @@ export default function AboutPage() {
           <div className="sheet__body stack-tight">
             <div className="row" style={{ justifyContent: 'space-between' }}>
               <h3>Language model layer (optional)</h3>
-              <span className="status-tag" data-status="Planned">
-                Planned
+              <span className="status-tag" data-status="Built">
+                Built (command line)
               </span>
             </div>
             <p className="small">
-              Will rewrite findings that the rules have already decided into plain explanations,
-              and draft alt text for a person to accept, edit or reject. Cached by finding
-              identity, so the wording never changes between runs. It will never detect a problem
-              and never change a band, and every report is complete with it switched off.
+              On the command line, it rewrites findings the rules have already decided into plain
+              explanations with a suggested fix, including draft alt text, shown in the HTML and PDF
+              report as suggestions to review before use. Cached by finding identity, so the wording
+              never changes between runs. It never detects a problem and never changes a band, and
+              every report is complete with it switched off. Accepting, editing or rejecting a
+              suggestion in this dashboard is not built yet.
             </p>
           </div>
         </div>
@@ -174,8 +176,8 @@ export default function AboutPage() {
               </tr>
               <tr>
                 <th scope="row">Static HTML file on disk</th>
-                <td>Planned</td>
-                <td>Planned: exact line and column</td>
+                <td>Yes, from the command line</td>
+                <td>Yes: exact line and column (command line)</td>
               </tr>
               <tr>
                 <th scope="row">Live URL with the repository available locally</th>
