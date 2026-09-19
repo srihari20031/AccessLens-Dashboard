@@ -198,8 +198,9 @@ export default function AboutPage() {
       </section>
 
       <p className="prose small muted">
-        Scans run from the command line, because they need a real browser. This dashboard stores,
-        shows and compares the reports they produce. <Link href="/runs">Go to your runs</Link>.
+        Scans need a real browser, so they run from the command line, or from this dashboard when
+        a scan service is connected to it; the dashboard never runs one itself. Either way, it
+        stores, shows and compares the reports they produce. <Link href="/runs">Go to your runs</Link>.
       </p>
     </div>
   );
