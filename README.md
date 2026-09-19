@@ -103,11 +103,30 @@ permission to crawl it" tick-box), and a list of your recent audits that refresh
    `scan_jobs` table with row-level security (each user sees only their own jobs) and a
    before-insert trigger that allows **one active audit per user** and **10 audits per user per
    24 hours**. A job waiting or running for more than 30 minutes counts as stale and no longer
-   blocks. It is safe on a project that already has runs.
+   blocks. It is safe on a project that already has runs, and safe to run again.
 2. Deploy the AccessLens scan worker (in the AccessLens repository) with the same Supabase URL
    and anon key.
-3. Set `ACCESSLENS_WORKER_URL` to the worker's base URL, e.g. `http://127.0.0.1:8080` locally.
-   It is **server-only** — never `NEXT_PUBLIC_` — and read on each request to `/runs`.
+3. Set `ACCESSLENS_WORKER_URL` to the worker's base URL. It must be **https**; plain http is
+   accepted only on loopback (`127.0.0.1`, `::1`, `localhost`), e.g. `http://127.0.0.1:8080`
+   locally, because the user's access token is sent to it. Any other value is treated as unset
+   (the form is hidden) and the server logs one line saying why. It is **server-only** — never
+   `NEXT_PUBLIC_` — and read on each request to `/runs`.
+
+**Why the limits hold.** A signed-in user's token can write `scan_jobs` directly, not only
+through the dashboard, so the table enforces everything itself:
+
+- **Jobs cannot be deleted** — there is no delete policy — because deleting old jobs would reset
+  the daily count. A job goes only when its user is deleted.
+- The **insert trigger** sets every column except `url`, `kind`, `max_pages` and
+  `permission_confirmed`: a new job is always `queued`, created now, with no report, error or
+  run, so it cannot be backdated out of the daily count.
+- The **update trigger** keeps the request (URL, kind, pages, permission, owner, creation time)
+  unchanged, lets status only move forward (queued → running or failed, running → done or
+  failed), sets `started_at`/`finished_at` from the database clock, writes the report only on
+  running → done and the error only on the move to failed, refuses to start a job older than 30
+  minutes, and lets `run_id` be set once, to one of the user's own runs (or cleared when that
+  run is deleted).
+- A **check** caps a stored report at 5 MB, the same limit as a file upload.
 
 **Without the worker** (`ACCESSLENS_WORKER_URL` unset), the form and the job list are hidden and
 the Runs page says in one sentence that scans run from the command line. That is the default,
@@ -125,13 +144,20 @@ Open results  → openAuditResults: parseReport → toImportPayload → import_r
 
 - Only the job id is sent. The worker reads the URL and limits from the row, which row-level
   security proves belongs to the caller. No service-role key exists on either side.
+- **The session is refreshed right before submitting**, so the token handed over is a fresh one
+  (an hour on Supabase). The worker keeps it for the whole job and refuses one with less than its
+  job timeout plus 30 minutes left (45 minutes by default); the dashboard checks the same minimum
+  and, if the session cannot be renewed, asks the user to sign in again without creating a job.
 - Anything but `202 Accepted` from the worker (or no answer within 10 seconds) marks the job
   failed with the fixed message "The scan service could not be reached. Try again later."
 - A finished job's report is imported through **exactly the upload path**, so a report from the
-  worker is validated as strictly as a file from disk. The run is labelled `Audit · <url>`.
+  worker is validated as strictly as a file from disk, and held to the same 5 MB cap. The run
+  is labelled `Audit · <url>`.
   Opening results twice imports once: the second click only redirects, and if two clicks race,
   the duplicate run is removed.
-- Failure messages from the worker are a fixed set of sentences, shown as text.
+- Failure messages from the worker are a fixed set of sentences, shown as text. If storing a
+  report fails — uploaded or from an audit — the page says so in one fixed sentence; the
+  database's own error text goes to the server log only.
 - The logic is in `src/lib/audit/` (validation, status wording, the worker call), unit-tested;
   database access is `src/lib/db/jobs.ts`.
 
