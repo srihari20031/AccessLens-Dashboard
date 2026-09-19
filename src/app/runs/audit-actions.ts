@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { friendlyInsertError, parseAuditInput } from '@/lib/audit/input';
+import { reportByteLength, STORE_FAILED_MESSAGE } from '@/lib/audit/results';
+import { tokenForWorker } from '@/lib/audit/session';
 import {
   claimJobRun,
   createJob,
@@ -24,6 +26,7 @@ import {
   type AuditFormValues,
   type OpenResultsState,
 } from './audit-state';
+import { MAX_UPLOAD_BYTES } from './upload-state';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -73,11 +76,22 @@ export async function startAudit(
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (user === null) {
+    return formError(values, 'Your session has ended. Sign in again to run an audit.');
+  }
+
+  // The worker keeps this token for the whole job and writes the result back with it, and it
+  // refuses one with less than its job timeout plus 30 minutes left. Refresh now, so the token
+  // handed over is a fresh one (an hour on Supabase), however long ago the cookie was issued.
+  // This runs just before the insert and the submit, so nothing slow sits in between, and a
+  // session that cannot be renewed stops here rather than leaving a failed job behind.
   const {
     data: { session },
-  } = await supabase.auth.getSession();
-  if (user === null || session === null) {
-    return formError(values, 'Your session has ended. Sign in again to run an audit.');
+    error: refreshError,
+  } = await supabase.auth.refreshSession();
+  const accessToken = refreshError ? null : tokenForWorker(session, Math.floor(Date.now() / 1000));
+  if (accessToken === null) {
+    return formError(values, 'Your session could not be renewed. Sign in again to run an audit.');
   }
 
   let jobId: string;
@@ -88,7 +102,7 @@ export async function startAudit(
     return formError(values, friendlyInsertError(message));
   }
 
-  const submitted = await submitJob(jobId, session.access_token);
+  const submitted = await submitJob(jobId, accessToken);
   if (!submitted.ok) {
     try {
       // Only a job still queued is marked: if the worker did pick it up, its own status wins.
@@ -135,6 +149,14 @@ export async function openAuditResults(
   if (job.status !== 'done') return openFailed('This audit has no results to open.');
 
   const report = await loadJobReport(id);
+  // The same cap as a file upload. The table also refuses a report over 5 MB, so this only
+  // matters for a row stored before that check existed; it is kept so both paths agree.
+  if (reportByteLength(report) > MAX_UPLOAD_BYTES) {
+    return openFailed(
+      `The audit finished, but its report is over the ${MAX_UPLOAD_BYTES / (1024 * 1024)} MB ` +
+        'limit and cannot be opened. Audit fewer pages.',
+    );
+  }
   const parsed = parseReport(report);
   if (!parsed.ok) {
     return openFailed(
@@ -147,8 +169,9 @@ export async function openAuditResults(
   try {
     runId = await importRun(toImportPayload(parsed.value, `Audit · ${job.url}`));
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    return openFailed('The report validated, but storing it failed.', [detail]);
+    // The database's text can name tables, constraints or values; it goes to the server log.
+    console.error('openAuditResults: import_run failed', error);
+    return openFailed(STORE_FAILED_MESSAGE);
   }
 
   let target = runId;

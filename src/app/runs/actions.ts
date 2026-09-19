@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
+import { STORE_FAILED_MESSAGE } from '@/lib/audit/results';
 import { deleteRun, importRun } from '@/lib/db/runs';
 import { toImportPayload } from '@/lib/report/map';
 import { parseReportText } from '@/lib/report/schema';
@@ -47,8 +48,9 @@ export async function uploadReport(
   try {
     runId = await importRun(toImportPayload(parsed.value, label));
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    return failed('The report validated, but storing it failed.', [detail]);
+    // The database's text can name tables, constraints or values; it goes to the server log.
+    console.error('uploadReport: import_run failed', error);
+    return failed(STORE_FAILED_MESSAGE);
   }
 
   revalidatePath('/runs');

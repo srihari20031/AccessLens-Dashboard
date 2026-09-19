@@ -125,12 +125,15 @@ export async function claimJobRun(id: string, runId: string): Promise<boolean> {
   return (data ?? []).length > 0;
 }
 
-/** Mark a job failed with one of the fixed messages, if it has not started yet. */
+/**
+ * Mark a job failed with one of the fixed messages, if it has not started yet. `finished_at`
+ * is not sent: the update trigger sets every timestamp from the database clock.
+ */
 export async function failQueuedJob(id: string, message: string): Promise<void> {
   const supabase = await createClient();
   const { error } = await supabase
     .from('scan_jobs')
-    .update({ status: 'failed', error: message, finished_at: new Date().toISOString() })
+    .update({ status: 'failed', error: message })
     .eq('id', id)
     .eq('status', 'queued');
   if (error) throw new Error(error.message);
