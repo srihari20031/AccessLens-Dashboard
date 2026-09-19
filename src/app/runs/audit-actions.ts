@@ -149,8 +149,8 @@ export async function openAuditResults(
   if (job.status !== 'done') return openFailed('This audit has no results to open.');
 
   const report = await loadJobReport(id);
-  // The same cap as a file upload. The table also refuses a report over 5 MB, so this only
-  // matters for a row stored before that check existed; it is kept so both paths agree.
+  // The same cap as a file upload. The table's check already refuses a stored report over
+  // 5 MB; this keeps the import path's own limit identical to the upload path's regardless.
   if (reportByteLength(report) > MAX_UPLOAD_BYTES) {
     return openFailed(
       `The audit finished, but its report is over the ${MAX_UPLOAD_BYTES / (1024 * 1024)} MB ` +
