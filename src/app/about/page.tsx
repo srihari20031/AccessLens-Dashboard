@@ -26,17 +26,17 @@ const STAGES: { name: string; status: Status; does: string; today: string }[] = 
   },
   {
     name: 'Parser',
-    status: 'Partly built',
+    status: 'Built',
     does: 'Loads each page in real Chromium and records what the rules need.',
     today:
-      'The DOM and computed styles are extracted. The accessibility tree and keyboard focus order are not yet, so rules that need them do not run.',
+      'Four readers: the DOM, computed styles, the accessibility tree that screen readers are given, and a real keyboard walk that presses Tab through the page and checks whether focus is visible.',
   },
   {
     name: 'Rule engine',
     status: 'Partly built',
     does: 'One independent rule per WCAG success criterion, each deciding pass, fail or needs manual review.',
     today:
-      'Rules are being added towards the twelve criteria in scope. Every report lists exactly which rules ran, and at which version.',
+      'Ten of the twelve criteria in scope: 1.1.1, 1.4.3, 1.4.11, 2.1.2, 2.4.2, 2.4.4, 2.4.7, 3.1.1, 3.3.2 and 4.1.2. 1.3.1 and 2.4.1 are next. Every report lists exactly which rules ran, and at which version.',
   },
   {
     name: 'Scorer',
@@ -50,7 +50,7 @@ const STAGES: { name: string; status: Status; does: string; today: string }[] = 
     status: 'Partly built',
     does: 'Turns findings into something a site owner can act on.',
     today:
-      'A canonical JSON report, and this dashboard. HTML and PDF reports, and reviewable source patches, are planned.',
+      'A canonical JSON report, this dashboard, and an HTML and PDF report with a plain-language explanation for every criterion that has a problem. Reviewable source patches are planned.',
   },
 ];
 
