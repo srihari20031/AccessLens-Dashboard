@@ -27,6 +27,26 @@ describe('the worker URL', () => {
     expect(normaliseWorkerUrl('worker.example')).toBeNull();
     expect(normaliseWorkerUrl('ftp://worker.example')).toBeNull();
   });
+
+  it('allows plain http only on loopback, where the token never leaves the machine', () => {
+    expect(normaliseWorkerUrl('http://127.0.0.1:8080')).toBe('http://127.0.0.1:8080');
+    expect(normaliseWorkerUrl('http://localhost:8080/')).toBe('http://localhost:8080');
+    expect(normaliseWorkerUrl('http://LOCALHOST:8080')).toBe('http://LOCALHOST:8080');
+    expect(normaliseWorkerUrl('http://[::1]:8080')).toBe('http://[::1]:8080');
+  });
+
+  it('refuses plain http anywhere else, since the user token would cross the network in clear', () => {
+    expect(normaliseWorkerUrl('http://worker.example')).toBeNull();
+    expect(normaliseWorkerUrl('http://10.0.0.5:8080')).toBeNull();
+    expect(normaliseWorkerUrl('http://127.0.0.1.worker.example')).toBeNull();
+    expect(normaliseWorkerUrl('http://localhost.worker.example')).toBeNull();
+    expect(normaliseWorkerUrl('http://[::2]:8080')).toBeNull();
+  });
+
+  it('allows https to any host', () => {
+    expect(normaliseWorkerUrl('https://10.0.0.5:8443')).toBe('https://10.0.0.5:8443');
+    expect(normaliseWorkerUrl('HTTPS://worker.example')).toBe('HTTPS://worker.example');
+  });
 });
 
 function fakeFetch(respond: () => Promise<Response>) {

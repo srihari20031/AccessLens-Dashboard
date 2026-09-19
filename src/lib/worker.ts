@@ -12,9 +12,25 @@ import {
   type SubmitResult,
 } from '@/lib/audit/worker-client';
 
-/** The worker's base URL, or null when no worker is connected (the form is then hidden). */
+let warnedRefused = false;
+
+/**
+ * The worker's base URL, or null when no worker is connected (the form is then hidden).
+ *
+ * A URL that is set but refused — not http(s), or plain http to anything but loopback — is
+ * treated exactly as unset, and the server log says so once, without echoing the value.
+ */
 export function workerUrl(): string | null {
-  return normaliseWorkerUrl(process.env.ACCESSLENS_WORKER_URL);
+  const raw = process.env.ACCESSLENS_WORKER_URL;
+  const url = normaliseWorkerUrl(raw);
+  if (url === null && (raw ?? '').trim() !== '' && !warnedRefused) {
+    warnedRefused = true;
+    console.warn(
+      'ACCESSLENS_WORKER_URL is set but refused: it must be https, or http only on loopback ' +
+        '(127.0.0.1, ::1, localhost). Run audit is disabled.',
+    );
+  }
+  return url;
 }
 
 export async function submitJob(jobId: string, accessToken: string): Promise<SubmitResult> {

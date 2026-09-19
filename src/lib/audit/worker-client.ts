@@ -10,17 +10,27 @@ export const WORKER_UNREACHABLE_MESSAGE = 'The scan service could not be reached
 
 export const DEFAULT_WORKER_TIMEOUT_MS = 10_000;
 
-/** The configured worker URL without trailing slashes, or null when unset or unusable. */
+/** Hosts where plain http is allowed: the token then never leaves the machine. */
+const LOOPBACK_HOSTS: ReadonlySet<string> = new Set(['127.0.0.1', '[::1]', 'localhost']);
+
+/**
+ * The configured worker URL without trailing slashes, or null when unset or unusable.
+ *
+ * The user's access token is sent to this address, so it must be https — except on loopback
+ * (`127.0.0.1`, `::1`, `localhost`), where local development runs the worker over plain http.
+ */
 export function normaliseWorkerUrl(raw: string | undefined): string | null {
   const trimmed = (raw ?? '').trim().replace(/\/+$/, '');
   if (trimmed === '') return null;
   try {
     const parsed = new URL(trimmed);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+    if (parsed.protocol === 'https:') return trimmed;
+    // `URL` lower-cases the host and keeps IPv6 brackets, so the comparison is exact.
+    if (parsed.protocol === 'http:' && LOOPBACK_HOSTS.has(parsed.hostname)) return trimmed;
+    return null;
   } catch {
     return null;
   }
-  return trimmed;
 }
 
 export type SubmitResult = { ok: true } | { ok: false; message: string; status: number | null };
