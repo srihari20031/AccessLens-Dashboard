@@ -78,7 +78,10 @@ export function DecisionForm({
         </div>
 
         <details className="decision__panel" open={review?.decision === 'edited'}>
-          <summary>Edit the suggested fix</summary>
+          <summary>
+            Edit the suggested fix
+            <span className="visually-hidden"> — {about}</span>
+          </summary>
           <div className="decision__panel-body stack-tight">
             <label htmlFor={editId}>Your wording of the fix</label>
             <textarea
@@ -105,7 +108,10 @@ export function DecisionForm({
         </details>
 
         <details className="decision__panel" open={review?.decision === 'rejected'}>
-          <summary>Reject the suggestion</summary>
+          <summary>
+            Reject the suggestion
+            <span className="visually-hidden"> — {about}</span>
+          </summary>
           <div className="decision__panel-body stack-tight">
             <label htmlFor={reasonId}>Why it was rejected (optional)</label>
             <textarea
