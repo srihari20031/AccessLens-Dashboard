@@ -1028,3 +1028,128 @@ textarea {
   border-style: dashed;
   color: var(--ink-soft); /* 7.54:1 on the sheet */
 }
+
+/* ---------------------------------------------------------------- source patches
+
+   A patch is a proposal about somebody's file. Like the AI text above it, it gets no status
+   colour of its own — not a band, not the review violet — because it is not a result, and
+   colouring it like one would read as a verdict no generator is entitled to make.
+
+   The five patch statuses are told apart by the words inside the tag. The border repeats the
+   distinction for a sighted reader scanning a long list, and never carries it alone: an edge
+   that could be made is solid and heavy, one the tool declined to write is dashed. */
+
+.status-tag[data-patch-status='ready'] {
+  border-width: 2px;
+}
+
+.status-tag[data-patch-status='needs-input'] {
+  border-width: 2px;
+  border-style: double;
+}
+
+.status-tag[data-patch-status='conflict'],
+.status-tag[data-patch-status='stale'],
+.status-tag[data-patch-status='unsupported'] {
+  border-style: dashed;
+  color: var(--ink-soft); /* 7.54:1 on the sheet */
+}
+
+/* The question a `needs-input` patch asks is the work item, not a footnote: it gets the
+   heavier edge and the body-size text, where the proposed-edit block gets the plain one. */
+.question {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--sheet);
+  border: 1px solid var(--rule-strong);
+  border-left-width: 4px;
+  border-radius: 2px;
+}
+
+.question > * + * {
+  margin-top: var(--space-3);
+}
+
+.question__label {
+  font-size: var(--size-s);
+  font-weight: 600;
+}
+
+.question__text {
+  font-size: var(--size-base);
+}
+
+.patch {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--sheet);
+  border: 1px solid var(--rule-strong);
+  border-left-width: 4px;
+  border-radius: 2px;
+}
+
+.patch > * + * {
+  margin-top: var(--space-3);
+}
+
+.patch__label {
+  font-size: var(--size-s);
+  font-weight: 600;
+}
+
+/*
+  The before and after of one edit.
+
+  Two blocks side by side above 46rem and stacked below it, each with its own heading saying
+  which is which. Nothing here depends on colour: the headings are the signal, the −/+ marker
+  is decorative and aria-hidden, and the two edges differ in *style* (dashed for the text that
+  is there now, solid and heavy for the text that would replace it) rather than in hue. A
+  red/green pair would be the obvious way to draw this and is exactly what 1.4.1 forbids as the
+  only distinction — and it would fail anyone reading in high contrast mode too.
+*/
+.diff {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 46rem) {
+  .diff {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.diff__side {
+  min-width: 0;
+  padding-left: var(--space-3);
+}
+
+.diff__side--old {
+  border-left: 3px dashed var(--rule-strong); /* 4.05:1 on the sheet — 1.4.11 */
+}
+
+.diff__side--new {
+  border-left: 3px solid var(--ink); /* 15.97:1 on the sheet */
+}
+
+/* Small and bold, not upper-cased: nothing else in this stylesheet upper-cases a label, and
+   some screen readers spell an all-capitals word out letter by letter. */
+.diff__label {
+  font-size: var(--size-xs);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-bottom: var(--space-2);
+}
+
+.diff__marker {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  margin-right: var(--space-2);
+}
+
+.diff__text {
+  margin: 0;
+}
+
+.diff__empty {
+  margin: 0;
+}

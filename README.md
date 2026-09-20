@@ -26,6 +26,10 @@ most of the design decisions below follow from it.
   with the model's explanation, its suggested fix and its stated confidence, and a decision
   per suggestion: accept, edit or reject. The run's page shows the counts. See
   [Fix review](#fix-review).
+- **Source patches** — for a run, every edit `accesslens fix` proposed against the scanned
+  HTML file and every question it refused to answer, grouped by status, each with its before
+  and after text and a decision: accept, reject, or mark applied. The run's page shows the
+  counts. Nothing here edits a file. See [Source patches](#source-patches).
 - A **keyboard trap finding (2.1.2)** shows the focus order the scanner recorded: every stop
   in order, the loop focus got caught in, and the elements it never reached, with Replay and
   Step controls. It needs reports from rule `no-keyboard-trap` 1.1.0 or later; older reports
@@ -57,6 +61,7 @@ supabase/migrations/0002_import_run.sql      -- the transactional import functio
 supabase/migrations/0003_source_location.sql -- keeps each finding's source location
 supabase/migrations/0004_scan_jobs.sql       -- audit jobs, only needed for Run audit
 supabase/migrations/0005_fix_reviews.sql     -- AI suggestions and fix-review decisions
+supabase/migrations/0006_patch_review.sql    -- source patches and patch-review decisions
 ```
 
 `0003` is safe on a project that already has runs. Until it is applied, uploads still work
@@ -219,6 +224,77 @@ accesslens explain report.json --out explanations.json      (command line, optio
   is dropped and counted, never guessed. The logic is `src/lib/review/`, unit-tested;
   database access is `src/lib/db/reviews.ts`.
 
+## Source patches
+
+`accesslens fix <report.json> --json patches.json` turns a scan of a **local HTML file** into a
+set of proposed source edits: for each non-passing finding, either a concrete text edit anchored
+to the line and column the scan recorded, or — where no machine should choose the value — a
+plain question for the page's owner. That is the other half of Phase 5: somebody has to read a
+proposed edit before it goes anywhere near a file. That is this screen, at **Source patches** on
+a run's page (`/runs/<id>/patches`).
+
+**The boundary, which the screen states in its own words.** This screen *records decisions about
+proposed edits*. It edits nothing: no file on your machine, on a server or anywhere else is
+touched by anything on the page. The edits are stored and displayed as text; applying one is
+something you do yourself, in your own working copy, under version control — which is why one of
+the three decisions is "I have applied it" rather than an Apply button. Nor does a decision
+change the finding: outcome, severity and band are the scanner's, and no code path leads from a
+decision to any of them. `run_findings` is never written to by anything in
+`src/lib/db/patches.ts`, and the patch tables carry no outcome, severity or band column at all.
+`tests/patch-boundary.test.ts` enforces both claims against the source, including that nothing in
+the feature imports a filesystem module or calls a write.
+
+**Setup.** Run `supabase/migrations/0006_patch_review.sql` in the Supabase SQL editor. It adds
+two tables with row-level security in the shape 0001 uses — reachable only through one of your
+own runs — and is safe on a project that already holds runs. Until it has been run the rest of
+the dashboard works unchanged, the run page's Source patches section is silent, and the patch
+screen says which file to run.
+
+**The workflow.**
+
+```
+accesslens scan page.html > report.json          (a local file: findings carry line and column)
+accesslens fix report.json --json patches.json   (command line)
+   → upload it on the run's Source patches screen
+   → run_patches, matched to findings by finding_hash
+   → accept / reject / mark applied per patch → patch_reviews
+   → counts on the run page
+```
+
+- Patches are grouped by status, in one fixed order: **ready** (an edit that matched the file),
+  **needs-input** (a question), then **conflict**, **stale** and **unsupported** — the three
+  ways the tool declined to write one. Every status is shown, because a question the tool
+  refuses to answer for you is a work item, not a leftover; within a group the run's own order
+  (band, then criterion, then selector) is kept.
+- A ready patch shows its file, line and column, its one-line description, and the **old and new
+  text side by side**: two labelled blocks, never a merged view. Each block says in a heading
+  which it is, the edges differ in style rather than in hue, and the −/+ markers are decorative.
+  Colour distinguishes nothing here — a red/green diff is exactly what 1.4.1 forbids as the only
+  signal.
+- `old_text` and `new_text` are raw markup out of somebody's HTML file, and a question may quote
+  it. Both land in a text node inside a `<code>` element, which React escapes. There is no
+  `dangerouslySetInnerHTML` in this project and there must not be.
+- Patches are matched to findings by `finding_hash`, as suggestions are: `run_patches` has a
+  foreign key onto `run_findings (run_id, finding_hash)`, so a stored patch always points at a
+  finding that really is in that run. It matters more here than for text — a patch names a file
+  and a line in it.
+- **Who decided and when are the server's to write.** A trigger stamps `decided_by`,
+  `decided_by_email` and `decided_at` from the caller's own token and the database clock.
+- Re-uploading the patch file replaces the patches in place and leaves every decision alone. A
+  decision older than the patch it is attached to is shown with a line saying so, which matters
+  more here than for AI text: a re-run against a changed file can move an edit to a different
+  line, and an "accepted" on the old one would be an accepted edit nobody read.
+- The parser is **strict about the shape as well as the values**, unlike the explanations parser:
+  the patch format is fixed and versioned (`patch_schema_version: 1`), so there is no older
+  spelling to be generous towards. A hash that is not lowercase hex, a status outside the five, a
+  source outside rule/ai, a position that is not a 1-based integer, or an edit longer than the
+  column stores is dropped and counted, never guessed. An over-long *edit* is dropped rather than
+  truncated — half an edit shown as the edit would be a lie about what would happen to a file —
+  while a description or a question, which nobody applies, is cut at the cap. Edit text is never
+  trimmed or normalised: whitespace is part of the edit. The logic is `src/lib/review/patches.ts`
+  and `src/lib/review/patch-decisions.ts`, unit-tested; database access is
+  `src/lib/db/patches.ts`.
+
 ## Checks
 
 ```bash
@@ -317,8 +393,10 @@ an accessibility tool would be the overstatement the brief forbids:
 
 - **Running a scan inside the dashboard** — Chromium does not run on a typical Next.js host;
   Run audit hands the scan to a separate worker instead, and is hidden without one.
-- **A source patch, before and after** — Phase 5. Fix review is built (below), but it reviews
-  the AI's *text*; nothing generates a diff against your file, and no patch is applied anywhere.
+- **Applying a patch** — Phase 5's patch *review* is built (below): `accesslens fix` proposes
+  the edits, the Source patches screen shows each one's before and after and records a decision.
+  What is deliberately absent is the button that would make the edit. Nothing in this dashboard
+  writes to a file, and the mockup's "apply" is a person's job, in their own working copy.
 - **Focus-order replay** — needs rule 2.1.2 and the focus-traversal provider.
 - **HTML/PDF export** — Phase 4. **The pull-request comment** — Phase 6b, a GitHub Action.
 - **A single "rule-set v1.3"** — the CLI records a version per rule (project plan D4), and
@@ -406,6 +484,11 @@ Sign out, Delete or Upload.
   replaces whatever was there. Each run has its own decisions, so the same problem reviewed on
   run #4 is "not yet reviewed" again on run #5, since a run's findings are what a decision
   hangs off. There is no audit trail of who decided what before the current decision.
+- **Patch review has the same one-reviewer, per-run shape as fix review**, and one decision per
+  finding: a run's patch set carries at most one patch per finding, as the CLI produces. There is
+  no audit trail of earlier decisions, and no check that an "applied" edit was really made — it
+  is a person's word, recorded as such. `accesslens fix` only works on a scan of a local file, so
+  a crawl and a scan of a live URL have no patch set to upload.
 - **Explanations are uploaded per run**, by hand, like reports. Re-uploading replaces the text
   and keeps every decision; a decision older than the text it is attached to is marked as such
   rather than cleared.

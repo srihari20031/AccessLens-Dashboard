@@ -165,6 +165,25 @@ properly means a route-change live region in the root layout — a client compon
 every page. Judged not worth the blast radius this close to the demonstration; every route now
 has a correct and distinct title, which is what 2.4.2 asks for.
 
+## Added after this audit, and not yet scanned
+
+**The Source patches screen (`/runs/<id>/patches`).** It was built to the standard above and to
+the same patterns as the Fix review screen it is the sibling of — one form per patch with several
+submit buttons, each naming which patch it acts on for a screen reader; `<details>` for the
+reject panel, so it is keyboard-operable with no script; every status and every decision written
+out in words inside its tag; headings in order (`h1` page, `h2` per status group, `h3` per patch,
+`h4` for the question or the edit, `h5` for the two sides of the diff); and the before/after
+diff distinguished by two headings and two border *styles* rather than by a red/green pair, which
+would make colour the only signal (1.4.1) and vanish in high contrast mode. The one new colour
+pair is `--ink` on `--sheet` (15.97:1) and `--ink-soft` on `--sheet` (7.54:1), both already
+measured above; the new borders are `--rule-strong` (4.05:1) and `--ink`, which clear 1.4.11's
+3:1.
+
+None of that is a scan. The screen has not been through pass 1 — the CLI has not been run
+against it, because it needs a run with a patch set in the database, and `accesslens fix` is
+itself new. Until it has, this document's "0 failures" covers the ten screens listed above and
+not this one.
+
 ## What this audit does not cover
 
 The tool checks twelve success criteria. Everything else in WCAG 2.2 AA was checked by hand or
