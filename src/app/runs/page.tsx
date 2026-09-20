@@ -81,7 +81,11 @@ export default async function RunsPage() {
         </p>
       )}
 
-      <UploadForm />
+      {/*
+        Collapsed unless there is nothing to list: the list is what a returning user came for,
+        and this used to be the tallest block on the page, above it, on every visit.
+      */}
+      <UploadForm defaultOpen={runs.length === 0} />
 
       {runs.length === 0 ? (
         <div className="sheet">

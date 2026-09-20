@@ -5,16 +5,34 @@ import { useActionState } from 'react';
 import { uploadReport } from './actions';
 import { EMPTY_UPLOAD_STATE } from './upload-state';
 
-export function UploadForm() {
+/**
+ * Upload a report, behind a disclosure.
+ *
+ * It used to be the tallest and brightest block on the runs page, above the list, on every
+ * visit — and a returning user came for the list. It is a `<details>` now, the repo's one
+ * disclosure pattern, so it costs a single line until it is wanted, and it opens itself when
+ * there is nothing to list yet — the one visit where uploading *is* the task.
+ *
+ * `open` is passed once and never again: React writes the attribute only when the prop
+ * changes, so a panel the reader opened stays open across a failed upload and the error is
+ * never reported into something closed. Nothing here scripts the disclosure — without
+ * JavaScript it still opens and closes, which is why a `<details>` was chosen at all.
+ */
+export function UploadForm({ defaultOpen = false }: { defaultOpen?: boolean }) {
   const [state, formAction, pending] = useActionState(uploadReport, EMPTY_UPLOAD_STATE);
 
   return (
-    // Named by its own heading, as the audit form beside it is, so a screen reader's list of
-    // forms says which is which. The id was already here; nothing pointed at it.
-    <form action={formAction} className="sheet" aria-labelledby="upload-heading">
+    <details className="sheet" open={defaultOpen}>
+      <summary>
+        <h2 id="upload-heading">Upload a report</h2>
+      </summary>
+      {/*
+        Named by that heading, as the audit form beside it is, so a screen reader's list of
+        forms says which is which. The id was already here; nothing pointed at it.
+      */}
+      <form action={formAction} aria-labelledby="upload-heading">
       <div className="sheet__body stack">
         <div className="stack-tight">
-          <h2 id="upload-heading">Upload a report</h2>
           <p className="prose small muted">
             The JSON that <code className="mono">accesslens scan</code> or{' '}
             <code className="mono">accesslens crawl</code> writes to standard output. The summary
@@ -75,6 +93,7 @@ export function UploadForm() {
           </button>
         </div>
       </div>
-    </form>
+      </form>
+    </details>
   );
 }

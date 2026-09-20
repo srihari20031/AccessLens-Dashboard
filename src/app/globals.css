@@ -657,6 +657,19 @@ summary {
   border-bottom: 1px solid var(--rule);
 }
 
+/*
+  The same, for a disclosure that *is* a sheet rather than sitting inside one — the upload
+  form on the runs page. Its heading keeps its own type; only the padding is borrowed, so the
+  closed panel reads as the section heading it always was.
+*/
+.sheet > summary {
+  padding: var(--space-4) var(--space-5);
+}
+
+.sheet > summary > h2 {
+  display: inline;
+}
+
 .filters {
   display: flex;
   flex-wrap: wrap;
