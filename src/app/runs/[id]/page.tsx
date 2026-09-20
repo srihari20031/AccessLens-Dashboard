@@ -5,8 +5,11 @@ import { notFound } from 'next/navigation';
 import { BandSentence, BandStrip } from '@/components/BandStrip';
 import { FindingsSection, readFilters } from '@/components/FindingsSection';
 import { PagesTable, type NotVisited, type SkippedEntry } from '@/components/PagesTable';
+import { ReviewSummary } from '@/components/ReviewSummary';
 import { SetupNotice } from '@/components/SetupNotice';
+import { loadReviewData } from '@/lib/db/reviews';
 import { listRuns, loadRun } from '@/lib/db/runs';
+import { countDecisions, reviewedTotal } from '@/lib/review/decisions';
 import { bandDelta, numberRuns, previousRun } from '@/lib/report/history';
 import { historyHref } from '@/lib/links';
 import { formatDateTime, pluralise } from '@/lib/format';
@@ -83,7 +86,7 @@ export default async function RunPage({
   const meta = readMeta(run.run_meta);
   const isCrawl = run.kind === 'crawl';
 
-  const allRuns = await listRuns();
+  const [allRuns, reviewData] = await Promise.all([listRuns(), loadReviewData(id)]);
   const numbers = numberRuns(allRuns);
   const number = numbers.get(run.id);
   const previous = previousRun(allRuns, run.id);
@@ -178,6 +181,12 @@ export default async function RunPage({
         </section>
       )}
 
+      <FixReviewSection
+        runId={run.id}
+        findingHashes={findings.map((finding) => finding.finding_hash)}
+        data={reviewData}
+      />
+
       <FindingsSection findings={findings} filters={filters} action={`/runs/${run.id}`} />
 
       <section aria-labelledby="how-heading" className="stack-tight">
@@ -217,6 +226,63 @@ export default async function RunPage({
         </p>
       </section>
     </div>
+  );
+}
+
+/*
+ * What a person has decided about this run's AI text, without opening the review screen.
+ *
+ * Counts only. A decision is about the suggested wording, never about a finding, so nothing
+ * here is added to, subtracted from or shown beside a band count.
+ */
+function FixReviewSection({
+  runId,
+  findingHashes,
+  data,
+}: {
+  runId: string;
+  findingHashes: string[];
+  data: Awaited<ReturnType<typeof loadReviewData>>;
+}) {
+  // Migration 0005 has not been run. The run page says nothing about it: the review screen is
+  // where that is explained, and a nag on every run page would be noise.
+  if (data === null) return null;
+
+  const withText = findingHashes.filter((hash) =>
+    data.suggestions.some((suggestion) => suggestion.finding_hash === hash),
+  );
+  const counts = countDecisions(withText, data.reviews);
+
+  return (
+    <section aria-labelledby="review-heading" className="stack-tight">
+      <div className="page-head" style={{ marginBottom: 0 }}>
+        <h2 id="review-heading">Fix review</h2>
+        <Link href={`/runs/${runId}/review`} className="button button--quiet">
+          {withText.length === 0 ? 'Open fix review' : 'Review the AI suggestions'}
+          <span className="visually-hidden"> for this run</span>
+        </Link>
+      </div>
+      {withText.length === 0 ? (
+        <p className="prose small muted">
+          This run carries no AI text. <code className="mono">accesslens explain</code> writes a
+          suggested fix per finding; upload what it writes on the fix review screen, and accept,
+          edit or reject each suggestion there. Nothing you decide there changes a finding.
+        </p>
+      ) : (
+        <>
+          <p className="prose small muted">
+            {reviewedTotal(counts)} of {withText.length}{' '}
+            {pluralise(withText.length, 'suggestion has', 'suggestions have')} been reviewed by a
+            person. These are decisions about the suggested text only — no finding&rsquo;s
+            outcome, severity or band is affected by them.
+          </p>
+          <ReviewSummary
+            counts={counts}
+            caption="Decisions recorded on this run's AI suggestions"
+          />
+        </>
+      )}
+    </section>
   );
 }
 
