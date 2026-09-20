@@ -404,6 +404,86 @@ a:hover {
   margin-bottom: var(--space-3);
 }
 
+/* ------------------------------------------------- findings, collapsed
+
+   A finding that renders everything it has — message, element, selector, evidence table,
+   focus replay, source line, pages — costs about 650px. Fourteen of them made a run page
+   9,722px tall and the patch screen 10,991px, which is not a list anybody can work down.
+   Collapsed, a finding is its band, its criterion, its element and its message: the four
+   things a reader scans by, and the four the summary carries.
+
+   `<summary>` keeps its `display: list-item`, so the disclosure marker stays; the heading
+   inside it is `display: inline` so the marker sits beside it rather than on a line of its
+   own. These rules have to out-specify `.sheet > details > summary`, which a finding in a
+   findings list matches, hence the child combinator on `.finding`. */
+
+.finding--collapsible {
+  padding: var(--space-4) var(--space-5);
+}
+
+.finding > details > .finding__summary {
+  padding: 0;
+  font-weight: 400;
+  border-bottom: 0;
+}
+
+.finding > details[open] > .finding__summary {
+  border-bottom: 0;
+  margin-bottom: var(--space-3);
+}
+
+.finding__summary > .finding__criterion {
+  display: inline;
+}
+
+/* The element and the message, one line each. Both are truncated rather than wrapped: the
+   summary is a place to recognise a finding, and the body below it has the whole of both. */
+.finding__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-1);
+  min-width: 0;
+}
+
+.finding__element {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 34ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--size-s);
+  color: var(--ink-soft);
+}
+
+.finding__excerpt {
+  flex: 1 1 18rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--size-s);
+}
+
+.finding__body {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--rule);
+}
+
+/* The decision controls sit outside the disclosure on the patch screen, so a reviewer can
+   accept a proposal without opening it. Tighter than the review screen's, where one finding
+   fills the panel on its own. */
+.finding--collapsible > .decision {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.finding--collapsible > .decision .decision__set > legend {
+  margin-bottom: var(--space-2);
+}
+
 .code-well {
   display: block;
   overflow-x: auto;
@@ -1078,6 +1158,15 @@ textarea {
   margin-top: var(--space-3);
   border: 1px solid var(--rule);
   border-radius: 2px;
+}
+
+/* Beside the other decisions rather than below them; its own line only once it is open. */
+.decision__buttons > .decision__panel {
+  margin-top: 0;
+}
+
+.decision__buttons > .decision__panel[open] {
+  flex-basis: 100%;
 }
 
 .decision__panel > summary {

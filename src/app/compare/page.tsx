@@ -253,7 +253,11 @@ function DiffSection({ group }: { group: DiffGroup }) {
             </summary>
             <div>
               {group.findings.map((finding) => (
-                <FindingCard key={finding.finding_hash} finding={finding} />
+                <FindingCard
+                  key={finding.finding_hash}
+                  finding={finding}
+                  open={finding.band === 'critical'}
+                />
               ))}
             </div>
           </details>

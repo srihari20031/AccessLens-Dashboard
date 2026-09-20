@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { BandSentence, BandStrip } from '@/components/BandStrip';
-import { FindingsSection, readFilters } from '@/components/FindingsSection';
+import { FindingsSection, readExpand, readFilters } from '@/components/FindingsSection';
 import { PagesTable, type NotVisited, type SkippedEntry } from '@/components/PagesTable';
 import { toImportPayload } from '@/lib/report/map';
 import { parseReport } from '@/lib/report/schema';
@@ -74,6 +74,7 @@ export default async function PreviewPage({ searchParams }: { searchParams: Prom
   const payload = toImportPayload(parsed.value, chosen.name);
   const { run, pages, findings } = payload;
   const filters = readFilters(params);
+  const expand = readExpand(params);
   const isCrawl = run.kind === 'crawl';
 
   const meta = run.run_meta;
@@ -148,7 +149,13 @@ export default async function PreviewPage({ searchParams }: { searchParams: Prom
         </section>
       )}
 
-      <FindingsSection findings={findings} filters={filters} action="/preview" hiddenFields={{ report: key }} />
+      <FindingsSection
+        findings={findings}
+        filters={filters}
+        expand={expand}
+        action="/preview"
+        hiddenFields={{ report: key }}
+      />
     </div>
   );
 }
