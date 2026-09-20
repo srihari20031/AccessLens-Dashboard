@@ -18,6 +18,8 @@ import {
 } from '@/lib/review/decisions';
 import { isConfigured } from '@/lib/supabase/config';
 
+import { readExpand, type FindingExpansion } from '@/components/FindingsSection';
+
 import { DecisionForm } from './DecisionForm';
 import { ExplanationsForm } from './ExplanationsForm';
 
@@ -33,7 +35,14 @@ type Params = { id: string };
 
 const CONFIDENCE_WORDS = { low: 'Low', medium: 'Medium', high: 'High' } as const;
 
-export default async function FixReviewPage({ params }: { params: Promise<Params> }) {
+export default async function FixReviewPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<Params>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const expand = readExpand(await searchParams);
   if (!isConfigured()) return <SetupNotice />;
 
   const { id } = await params;
@@ -92,7 +101,7 @@ export default async function FixReviewPage({ params }: { params: Promise<Params
           </p>
         </div>
       ) : (
-        <ReviewBody runId={run.id} findings={findings} data={data} />
+        <ReviewBody runId={run.id} findings={findings} data={data} expand={expand} />
       )}
     </div>
   );
@@ -102,10 +111,12 @@ function ReviewBody({
   runId,
   findings,
   data,
+  expand,
 }: {
   runId: string;
   findings: FindingRow[];
   data: NonNullable<Awaited<ReturnType<typeof loadReviewData>>>;
+  expand: FindingExpansion;
 }) {
   const suggestions = new Map(data.suggestions.map((row) => [row.finding_hash, row]));
   const reviews = new Map(data.reviews.map((row) => [row.finding_hash, row]));
@@ -132,8 +143,26 @@ function ReviewBody({
           <p className="muted small" role="status">
             {items.length} of {findings.length}{' '}
             {pluralise(findings.length, 'finding', 'findings')} in this run{' '}
-            {pluralise(items.length, 'carries', 'carry')} AI text
+            {pluralise(items.length, 'carries', 'carry')} AI text. Each suggestion opens for
+            its explanation and evidence; criticals start open, and you can decide on one
+            without opening it.
           </p>
+          {/*
+            Plain links, so expanding needs no script and has its own URL — the same decision,
+            and the same cost, as the source-patches screen and the findings filters.
+          */}
+          {items.length > 0 ? (
+            <div className="row">
+              <a className="button button--quiet" href={`/runs/${runId}/review?expand=all`}>
+                Expand all
+                <span className="visually-hidden"> suggestions</span>
+              </a>
+              <a className="button button--quiet" href={`/runs/${runId}/review?expand=none`}>
+                Collapse all
+                <span className="visually-hidden"> suggestions</span>
+              </a>
+            </div>
+          ) : null}
         </div>
 
         {items.length === 0 ? (
@@ -163,6 +192,7 @@ function ReviewBody({
                 finding={finding}
                 suggestion={suggestions.get(finding.finding_hash)!}
                 review={reviews.get(finding.finding_hash) ?? null}
+                open={expand === 'all' || (expand === null && finding.band === 'critical')}
               />
             ))}
           </div>
@@ -186,41 +216,56 @@ function SuggestionItem({
   finding,
   suggestion,
   review,
+  open,
 }: {
   runId: string;
   finding: FindingRow;
   suggestion: SuggestionRecord;
   review: ReviewRecord | null;
+  open: boolean;
 }) {
   const decision = review?.decision ?? 'pending';
   const stale = suggestionChangedSinceDecision(suggestion.imported_at, review?.decided_at ?? null);
 
+  /*
+   * Collapsed to one line, exactly as the sibling source-patches screen is: a reviewer moves
+   * between the two and they must behave the same way. The decision controls stay *outside*
+   * the disclosure, so twenty suggestions can be accepted or rejected without opening one,
+   * and nothing interactive is nested inside the <summary>.
+   */
   return (
-    <article className={`finding band-${finding.band}`}>
-      <div className="finding__head">
-        <BandTag band={finding.band} />
-        <h3 className="finding__criterion">
-          <span className="mono">{finding.criterion}</span> {finding.criterion_name}
-        </h3>
-        <span className="status-tag" data-decision={decision}>
-          {DECISION_SHORT_LABELS[decision]}
-        </span>
-      </div>
+    <article className={`finding finding--collapsible band-${finding.band}`}>
+      <details open={open}>
+        <summary className="finding__summary">
+          <h3 className="finding__criterion">
+            <BandTag band={finding.band} /> <span className="mono">{finding.criterion}</span>{' '}
+            {finding.criterion_name}{' '}
+            <span className="status-tag" data-decision={decision}>
+              {DECISION_SHORT_LABELS[decision]}
+            </span>
+          </h3>
+          <span className="finding__line">
+            <code className="finding__element mono">{finding.snippet}</code>
+            <span className="finding__excerpt">
+              {suggestion.explanation !== '' ? suggestion.explanation : finding.message}
+            </span>
+          </span>
+        </summary>
+        <div className="finding__body">
+          <p className="finding__message">{finding.message}</p>
 
-      <p className="finding__message">{finding.message}</p>
+          <div className="stack-tight">
+            <div>
+              <span className="visually-hidden">Element</span>
+              <code className="code-well">{finding.snippet}</code>
+            </div>
+            <div>
+              <span className="visually-hidden">CSS selector</span>
+              <code className="code-well xsmall muted">{finding.selector}</code>
+            </div>
+          </div>
 
-      <div className="stack-tight">
-        <div>
-          <span className="visually-hidden">Element</span>
-          <code className="code-well">{finding.snippet}</code>
-        </div>
-        <div>
-          <span className="visually-hidden">CSS selector</span>
-          <code className="code-well xsmall muted">{finding.selector}</code>
-        </div>
-      </div>
-
-      <div className="suggestion">
+          <div className="suggestion">
         <h4 className="suggestion__label">AI suggestion — review before use</h4>
         {suggestion.explanation !== '' ? (
           <p className="prose small">{suggestion.explanation}</p>
@@ -249,12 +294,12 @@ function SuggestionItem({
             {suggestion.model ?? 'model not recorded'}
             {suggestion.prompt_version !== null ? ` · prompt ${suggestion.prompt_version}` : ''}
           </dd>
-          <dt>Imported</dt>
-          <dd>{formatDateTime(suggestion.imported_at)}</dd>
-        </dl>
-      </div>
+              <dt>Imported</dt>
+              <dd>{formatDateTime(suggestion.imported_at)}</dd>
+            </dl>
+          </div>
 
-      <div className="stack-tight decision__state">
+          <div className="stack-tight decision__state">
         <p className="small">
           <strong>Decision: </strong>
           {describeDecision(review, formatDateTime)}
@@ -271,13 +316,15 @@ function SuggestionItem({
             <code className="code-well">{review.edited_fix}</code>
           </div>
         ) : null}
-        {review?.decision === 'rejected' && review.reason !== null ? (
-          <p className="small">
-            <strong>Reason given: </strong>
-            {review.reason}
-          </p>
-        ) : null}
-      </div>
+            {review?.decision === 'rejected' && review.reason !== null ? (
+              <p className="small">
+                <strong>Reason given: </strong>
+                {review.reason}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </details>
 
       <DecisionForm
         runId={runId}
