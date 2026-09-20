@@ -1,3 +1,4 @@
+import { BandChips } from '@/components/BandStrip';
 import { BANDS, BAND_LABELS } from '@/lib/report/bands';
 import type { PageRow } from '@/lib/report/map';
 import { summarisePages } from '@/lib/report/map';
@@ -33,7 +34,15 @@ export function PagesTable({
         per page, so one finding on several pages is counted on each of them.
       </p>
 
-      <div className="sheet table-scroll">
+      {/* Cards below 40rem, table above — see `.narrow-cards` in globals.css for why the
+          table is replaced rather than restyled. */}
+      <ul className="sheet narrow-cards">
+        {pages.map((page) => (
+          <PageCard key={page.url} page={page} />
+        ))}
+      </ul>
+
+      <div className="sheet table-scroll wide-table">
         <table className="data-table">
           <caption className="visually-hidden">Pages attempted in this run</caption>
           <thead>
@@ -110,5 +119,44 @@ export function PagesTable({
         </p>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * One attempted page, for the narrow layout.
+ *
+ * A page that was not evaluated has no counts to show, and says so in words rather than
+ * printing four zeros that would read as "nothing wrong here".
+ */
+function PageCard({ page }: { page: PageRow }) {
+  const evaluated = page.status === 'evaluated';
+
+  return (
+    <li className="narrow-card">
+      <div className="stack-tight">
+        <span className="mono xsmall" style={{ overflowWrap: 'anywhere' }}>
+          {page.url}
+        </span>
+        <span className="xsmall muted">
+          {formatPageStatus(page.status)}
+          {page.error_kind ? ` (${page.error_kind})` : ''}
+          {page.depth !== null ? ` · depth ${page.depth}` : ''}
+          {page.http_status !== null ? ` · HTTP ${page.http_status}` : ''}
+        </span>
+      </div>
+
+      {evaluated ? (
+        <>
+          <BandChips counts={page.bands} label={`Severity band counts for ${page.url}`} />
+          <span className="xsmall muted">
+            {page.pass_count} {pluralise(page.pass_count, 'check passed', 'checks passed')}
+          </span>
+        </>
+      ) : (
+        <span className="xsmall muted">
+          Not evaluated, so nothing here says anything about this page.
+        </span>
+      )}
+    </li>
   );
 }
