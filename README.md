@@ -440,6 +440,13 @@ It is an accessibility tool, so it has to survive its own rules. What was done d
 - Measured contrast ratios of the palette against the white report surface:
   `--ink` 15.97:1, `--ink-soft` 7.54:1, `--accent` 7.60:1, critical 8.97:1, serious 5.92:1,
   moderate 6.73:1, review 9.20:1 — all above the 4.5:1 that rule 1.4.3 requires.
+- **There is a dark palette too**, under `prefers-color-scheme: dark`, covering every token and
+  measured the same way against both dark surfaces: `--ink` 13.12:1, `--ink-soft` 7.46:1,
+  `--accent` 8.49:1, critical 8.05:1, serious 7.90:1, moderate 8.56:1, review 7.31:1 on the
+  dark sheet, and `--rule-strong` 5.40:1 for 1.4.11. It is not inverted light mode: white on
+  black halates, so the surfaces are a dark blue-grey neutral and the text is dimmed rather
+  than driven to 21:1. The whole table, the method and what is not verified are in
+  `docs/self-audit.md`.
 - Form control borders use `--rule-strong`, 4.05:1 on the report surface and 3.42:1 on the page
   ground, above the 3:1 that rule 1.4.11 requires. It was `#94a0b4` at first, commented as
   3.1:1; crawling the running dashboard with AccessLens measured 2.64:1 and 2.23:1 and failed
@@ -471,8 +478,12 @@ Sign out, Delete or Upload.
 
 ## Known limitations
 
-- **Light colour scheme only.** A dark palette would double the contrast surface to verify, and
-  every ratio above is stated as measured against one surface.
+- **The colour scheme follows the operating system, and there is no in-page toggle.** This app
+  works with JavaScript off by design, so a toggle would mean a cookie plus a server action plus
+  a control on every page; `prefers-color-scheme` carries the preference already. Both palettes
+  are measured against both of their own surfaces (`docs/self-audit.md`), but **the CLI has only
+  ever scanned the light one** — `accesslens scan` drives Chromium in its default scheme and has
+  no flag for the other, so "no failures" is a statement about light mode.
 - **No pagination.** A run with thousands of findings renders them all. The fixtures and any
   realistic student-project crawl are far smaller; a crawl of a large site would need it.
 - **Filters are exact-match**, not free-text search.

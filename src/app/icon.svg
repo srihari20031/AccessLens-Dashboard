@@ -5,10 +5,10 @@
     .dark-half, .rim { fill: #1a2230; stroke: #1a2230; }
     .rim { fill: none; }
     @media (prefers-color-scheme: dark) {
-      .handle { stroke: #7cc4cf; }
-      .glass { fill: #121820; }
-      .dark-half { fill: #eef1f5; stroke: #eef1f5; }
-      .rim { stroke: #eef1f5; }
+      .handle { stroke: #79c8d6; }
+      .glass { fill: #1b212c; }
+      .dark-half { fill: #e3e8f0; stroke: #e3e8f0; }
+      .rim { stroke: #e3e8f0; }
     }
   </style>
   <line class="handle" x1="38" y1="38" x2="56" y2="56" stroke-width="9" stroke-linecap="round"/>

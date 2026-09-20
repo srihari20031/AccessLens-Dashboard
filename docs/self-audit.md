@@ -184,6 +184,139 @@ against it, because it needs a run with a patch set in the database, and `access
 itself new. Until it has, this document's "0 failures" covers the ten screens listed above and
 not this one.
 
+## The dark palette
+
+_Added 20 September 2026, on `feat/dark-mode`. Not part of the scan above._
+
+The dashboard now has two colour schemes. Which one a reader gets is decided by their
+operating system through `prefers-color-scheme`; `color-scheme: light dark` on `:root` and
+`<meta name="color-scheme" content="light dark">` from the layout's `viewport` export tell the
+browser to draw its own chrome — scrollbars, native form widgets, the canvas before the
+stylesheet arrives — to match.
+
+**There is no in-page toggle, deliberately.** This app works with JavaScript switched off by
+design: the filters are a GET form, every decision is a server action, and nothing on a screen
+needs a script to open or operate. A toggle that honoured that would be a cookie plus a server
+action plus a control on every page — a fourth thing to keep in sync on a screen whose job is
+to show findings — and it would have to answer for a reader who has JavaScript off, a reader
+whose system setting says the opposite, and the first visit with no cookie yet. The operating
+system already carries that preference, every browser exposes it, and following it costs
+nothing and cannot disagree with itself. A toggle can be added later without moving a single
+colour, because all sixteen values live in one `:root` block.
+
+### The two palettes, as measured
+
+Ratios are computed from the WCAG relative-luminance and contrast-ratio definitions and
+**truncated** to four decimal places, never rounded — the same rule `src/accesslens/color.py`
+follows in the CLI, and for the same reason: a true 4.49995 must not be allowed to read as a
+passing 4.5. The arithmetic was written out again for this work rather than imported, and
+checked by reproducing the light palette's already-published numbers before a single dark
+value was chosen. They agree; where a figure below differs from an older comment in the last
+place — 15.96 against 15.97 — it is because this document truncates where those rounded.
+
+| Token | Light | on sheet | on ground | Dark | on sheet | on ground |
+| --- | --- | --- | --- | --- | --- | --- |
+| `--ground` | `#e9ecf1` | — | — | `#10141b` | — | — |
+| `--sheet` | `#ffffff` | — | 1.18:1 | `#1b212c` | — | 1.14:1 |
+| `--ink` | `#1a2230` | 15.96:1 | 13.48:1 | `#e3e8f0` | 13.12:1 | 14.99:1 |
+| `--ink-soft` | `#4a5567` | 7.53:1 | 6.36:1 | `#a7b1c2` | 7.46:1 | 8.53:1 |
+| `--rule` | `#c7ceda` | 1.58:1 | 1.33:1 | `#333c4a` | 1.45:1 | 1.65:1 |
+| `--rule-strong` | `#737f92` | 4.05:1 | 3.42:1 | `#8b96a8` | 5.40:1 | 6.17:1 |
+| `--accent` | `#0e5c6b` | 7.60:1 | 6.42:1 | `#79c8d6` | 8.49:1 | 9.70:1 |
+| `--accent-hover` | `#0a4753` | 10.29:1 | — | `#a9dde8` | 10.91:1 | — |
+| `--accent-wash` | `#e3f0f2` | 13.69:1 | — | `#14313c` | 11.12:1 | — |
+| `--band-critical` | `#8e1b2b` | 8.96:1 | 7.57:1 | `#ff9ba3` | 8.05:1 | 9.20:1 |
+| `--band-serious` | `#a24b07` | 5.92:1 | 5.00:1 | `#f0a566` | 7.90:1 | 9.03:1 |
+| `--band-moderate` | `#6a5b12` | 6.73:1 | 5.68:1 | `#c6c069` | 8.56:1 | 9.79:1 |
+| `--band-review` | `#52368f` | 9.19:1 | 7.76:1 | `#b3a4f2` | 7.31:1 | 8.35:1 |
+| `--wash-critical` | `#fbeaec` | 13.74:1 | — | `#301a1f` | 13.19:1 | — |
+| `--wash-serious` | `#fbeee4` | 14.02:1 | — | `#2d2117` | 12.72:1 | — |
+| `--wash-moderate` | `#f6f2e0` | 14.21:1 | — | `#262614` | 12.45:1 | — |
+| `--wash-review` | `#eeeaf7` | 13.49:1 | — | `#251f3a` | 12.77:1 | — |
+
+A colour's own figure is against the surface named at the top of the column. For
+`--accent-hover` the figure is the sheet-coloured button label on it, and for the four washes
+and the accent wash it is `--ink` on that wash — the notice bodies and the band tags'
+background. `--ink-soft` on each dark wash is 7.08:1 or better, and on the dark accent wash
+6.32:1.
+
+Each band colour is also its own band tag's text, on its own wash: critical 8.09:1, serious
+7.66:1, moderate 8.13:1, review 7.11:1 in dark (7.72, 5.20, 5.99 and 7.77 in light). Every one
+of those is above 4.5:1, not merely above the 3:1 a band's *edge* needs, because a band is
+written out in words in its own colour wherever it appears.
+
+**1.4.11 in dark**, every non-text pair that carries meaning: `--rule-strong` 5.40:1 on the
+sheet and 6.17:1 on the ground (form-control and table borders, and the dashed "text now in the
+file" edge of a diff); the four band colours 7.31:1 to 9.79:1 on both surfaces (the band
+strip's top edge, a finding's left edge, a band tag's border); `--ink` 13.12:1 on the sheet
+(the solid "text this edit would put there" edge); and `--accent` 8.49:1 on the sheet, 9.70:1
+on the ground, 8.54:1 over the critical wash, 8.26:1 over the review wash and 7.19:1 over the
+accent wash — that last set is the focus ring, which has to stay visible wherever it lands.
+
+**Telling the four bands apart.** Colour is never the only signal here — every band is written
+out in words beside its count — but four bands still have to read as four. In CIELAB the
+closest dark pair is serious against moderate at ΔE 31.4, where the closest light pair (the
+same two) is ΔE 34.5. The rest are 35.8, 51.7, 58.1, 80.6 and 87.5.
+
+### What the dark scheme is, and is not
+
+It is not the light palette inverted. Pure white on pure black is 21:1 and halates: the type
+blooms, the stems thicken, and every hairline in the stylesheet is lost under it. The surfaces
+are a dark blue-grey neutral with the sheet sitting a little above the ground (1.14:1, where
+the white sheet sits 1.18:1 above the grey one), and body text is dimmed to 13.12:1 rather
+than driven to the maximum. Hairlines, the 2px radius, no shadows and no glow are the light
+design untouched, and the bands keep their meaning: critical, serious and moderate on one warm
+ramp because they are degrees of the same thing, review off it in violet because it is not.
+
+Three things needed a dark counterpart rather than a token:
+
+- **`--accent-hover`** is now a token. The button's hover fill has to move darker on light and
+  lighter on dark for the sheet-coloured label on it to stay readable (10.29:1 and 10.91:1).
+- **`::selection`** is chosen and measured here rather than left to the browser, which draws
+  its own blue behind otherwise-unchanged text. It is the sheet colour on the accent: 7.60:1
+  light, 8.49:1 dark. The accent *wash* was tried first and rejected on the screenshots — at
+  1.16:1 and 1.17:1 against the sheet, a selected run of text barely looked selected.
+- **The logo mark.** Its glass is a white disc with a dark half — the contrast ratio the tool
+  measures. On a dark header that reads as a hole punched in the page, so the two halves swap.
+  The component draws them as SVG presentation attributes, which any CSS rule outranks, so the
+  mark gets its dark form from the stylesheet and `LogoMark.tsx` is untouched. `app/icon.svg`
+  already carried a dark block of its own; its three values are now these three tokens.
+
+### Checked by eye, in both schemes
+
+Built (`npm run build`), served, and screenshotted in Chromium through Playwright with
+`color_scheme` set each way — whole pages and individual components — with the four database
+readers replaced by the same kind of temporary fixture stub pass 1 used. That stub is in none
+of these commits.
+
+Looked at: the runs list, including the audit form's native radios, checkbox, number field and
+file input; a run detail page — band strip, band tags, finding edges, code wells, evidence
+lists; the fix-review screen, its AI block and its decision controls; the source-patches
+screen, whose two diff sides are told apart by border *style* (dashed for the text that is
+there now, solid and heavy for the text that would replace it) and still are; the sign-in page;
+the history index and one site's history with its SVG chart; and, injected into a real page so
+they inherited the tokens, the focus ring, a text selection, the three notice variants, all
+four band tags, every status tag, the four button states and the focus-replay stops.
+
+### What is not verified
+
+- **The CLI has not scanned the dark scheme.** `accesslens scan` drives Chromium in its default
+  (light) colour scheme and has no flag for the other, so the "0 failures" earlier in this
+  document is a statement about the light palette only. Every dark ratio here is arithmetic on
+  the token values — on what the CSS says — not a measurement of what Chromium painted.
+- **`forced-colors` / Windows High Contrast is not tested.** Nothing here depends on colour
+  alone and the border-style distinctions were chosen partly with that mode in mind, but it was
+  not opened.
+- **The loading placeholder bar is as faint in dark as in light** — the ground on the sheet,
+  1.14:1 against 1.18:1. It is `aria-hidden` decoration beside a `role="status"` sentence that
+  says the same thing in words, so it was left rather than given a dark-only brightness the
+  light scheme does not have.
+- **The SVG history chart is the one place the tool cannot check either scheme**: `StyleResolver`
+  declines on SVG content because it paints with `fill`, so 1.4.3 there is needs-manual-review
+  in both. Its numbers are `--ink` and `--ink-soft` on the sheet, 13.12:1 and 7.46:1 in dark.
+- **Nobody has read the dark palette on a real screen in a dark room**, which is the condition
+  it exists for, and nobody who uses assistive technology daily has seen either scheme.
+
 ## What this audit does not cover
 
 The tool checks twelve success criteria. Everything else in WCAG 2.2 AA was checked by hand or

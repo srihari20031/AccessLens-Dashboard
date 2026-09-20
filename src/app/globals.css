@@ -15,10 +15,18 @@
 
   Passes get no colour at all. A green "pass" badge is exactly the reassurance this project
   refuses to give: the automated checks not firing is not evidence of conformance.
+
+  There are two palettes: this one and the dark one below it. Nothing else changes between
+  them — every rule in this file reads a token, so the dark scheme is a second set of values
+  and not a second stylesheet. Which one a reader gets is decided by their operating system
+  (`prefers-color-scheme`); there is no in-page toggle, for the reason recorded in
+  docs/self-audit.md.
 */
 
 :root {
-  color-scheme: light;
+  /* Both schemes exist, so the browser's own chrome — scrollbars, native form widgets, the
+     canvas before this stylesheet arrives — follows the reader's system setting too. */
+  color-scheme: light dark;
 
   --ground: #e9ecf1; /* page ground */
   --sheet: #ffffff; /* report surface */
@@ -27,6 +35,7 @@
   --rule: #c7ceda; /* hairlines */
   --rule-strong: #737f92; /* borders that carry meaning, incl. form controls (1.4.11) — 4.05:1 on sheet, 3.42:1 on ground */
   --accent: #0e5c6b; /* links, focus — 7.60:1 on sheet, 6.42:1 against ground */
+  --accent-hover: #0a4753; /* button hover — the sheet-coloured label on it is 10.29:1 */
   --accent-wash: #e3f0f2;
 
   --band-critical: #8e1b2b; /* 8.97:1 on sheet */
@@ -60,6 +69,77 @@
   --shell: 74rem;
 }
 
+/* ---------------------------------------------------------------- dark
+
+   The same design measured again on a dark ground, not an inversion of the light one.
+
+   Pure white on pure black is 21:1 and halates: the type blooms, the stems thicken, and every
+   hairline in this stylesheet is lost under it. So the surfaces are a dark blue-grey neutral,
+   the sheet sitting a little above the ground exactly as the white sheet sits on the grey one
+   in light mode (1.14:1 here, 1.18:1 there), and the text is dimmed to about 13:1 rather than
+   driven to the maximum. Everything else is the light design untouched — hairlines, the 2px
+   radius, no shadows, no glow, and colour never the only signal.
+
+   The bands are the same four hues read the other way round: they now have to be lighter than
+   the surface instead of darker, so each is raised in lightness and let down in saturation.
+   Critical, serious and moderate stay one warm ramp because they are degrees of the same
+   thing; review stays violet, off it. The closest pair is 31 ΔE apart in CIELAB, against 34
+   for the closest light pair — the same "told apart at a glance", and as in light mode the
+   word is beside the colour regardless.
+
+   Every ratio in these comments was computed from the WCAG relative-luminance formula and
+   truncated to 4 dp, then written here to 2. None is copied from anywhere. The whole table,
+   the method and what could not be verified are in docs/self-audit.md. */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #10141b; /* page ground */
+    --sheet: #1b212c; /* report surface — 1.14:1 on ground */
+    --ink: #e3e8f0; /* body text — 13.12:1 on sheet, 14.99:1 on ground */
+    --ink-soft: #a7b1c2; /* secondary text — 7.46:1 on sheet, 8.53:1 on ground */
+    --rule: #333c4a; /* hairlines — 1.45:1 on sheet, 1.65:1 on ground */
+    --rule-strong: #8b96a8; /* borders that carry meaning, incl. form controls (1.4.11) — 5.40:1 on sheet, 6.17:1 on ground */
+    --accent: #79c8d6; /* links, focus, button fill — 8.49:1 on sheet, 9.70:1 on ground */
+    --accent-hover: #a9dde8; /* button hover — the sheet-coloured label on it is 10.91:1 */
+    --accent-wash: #14313c; /* ink on it 11.12:1; the accent focus ring over it 7.19:1 */
+
+    --band-critical: #ff9ba3; /* 8.05:1 on sheet, 9.20:1 on ground, 8.09:1 on its wash */
+    --band-serious: #f0a566; /* 7.90:1 on sheet, 9.03:1 on ground, 7.66:1 on its wash */
+    --band-moderate: #c6c069; /* 8.56:1 on sheet, 9.79:1 on ground, 8.13:1 on its wash */
+    --band-review: #b3a4f2; /* 7.31:1 on sheet, 8.35:1 on ground, 7.11:1 on its wash */
+
+    --wash-critical: #301a1f; /* ink on it 13.19:1, ink-soft 7.50:1 */
+    --wash-serious: #2d2117; /* ink on it 12.72:1, ink-soft 7.23:1 */
+    --wash-moderate: #262614; /* ink on it 12.45:1, ink-soft 7.08:1 */
+    --wash-review: #251f3a; /* ink on it 12.77:1, ink-soft 7.27:1 */
+  }
+
+  /*
+    The mark is a lens whose glass is split white and dark — the contrast ratio the tool
+    measures. On a dark header the white disc reads as a hole punched in the page, so the two
+    halves swap: the glass takes the sheet and the dark half takes the ink. Same picture, same
+    meaning, and the same values app/icon.svg uses for the favicon.
+
+    The component draws these as SVG presentation attributes, which any rule here outranks, so
+    the mark gets its dark counterpart without the component being touched.
+  */
+  .logo-mark circle[r='16'] {
+    fill: var(--sheet);
+  }
+
+  .logo-mark path {
+    fill: var(--ink);
+  }
+
+  .logo-mark circle[r='19'] {
+    stroke: var(--ink);
+  }
+
+  .logo-mark line {
+    stroke: var(--accent);
+  }
+}
+
 html {
   background: var(--ground);
 }
@@ -71,6 +151,20 @@ body {
   font-size: var(--size-base);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+  A selection is a colour pair like any other, so it is chosen and measured like one rather
+  than left to the browser: the sheet colour on the accent, 7.60:1 in light and 8.49:1 in dark.
+
+  The accent *wash* was tried first and is the wrong tool — it is a background tint, 1.16:1
+  against the sheet in light and 1.17:1 in dark, so a selected run of text was barely
+  distinguishable from an unselected one. A selection has to be seen at a glance, and the
+  accent at full strength is the only pair here that both says "accent" and does that.
+*/
+::selection {
+  background: var(--accent);
+  color: var(--sheet);
 }
 
 code,
@@ -600,9 +694,12 @@ input[type='number'] {
   text-decoration: none;
 }
 
+/* The hover fill is a token because it has to move the opposite way in each scheme: darker
+   than the accent on light, lighter than it on dark, so that the sheet-coloured label on it
+   stays readable either way. */
 .button:hover {
-  background: #0a4753;
-  border-color: #0a4753;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 .button--quiet {

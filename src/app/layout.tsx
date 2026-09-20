@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
 import { SiteHeader } from '@/components/SiteHeader';
 
@@ -27,6 +27,17 @@ export const metadata: Metadata = {
   title: { default: 'AccessLens', template: '%s — AccessLens' },
   description:
     `Read and compare AccessLens ${WCAG_TARGET} conformance reports. Severity bands, never a score.`,
+};
+
+/*
+  Both schemes, in the document head as `<meta name="color-scheme" content="light dark">`.
+
+  globals.css says the same thing on `:root`, but the meta is read before any stylesheet
+  arrives, so the first paint of the canvas — and the scrollbar beside it — is already the
+  reader's own scheme rather than a white flash that turns dark a moment later.
+*/
+export const viewport: Viewport = {
+  colorScheme: 'light dark',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
