@@ -433,10 +433,16 @@ a:hover {
   overflow-wrap: anywhere;
 }
 
+/*
+  Every item here is a URL, and a URL has no spaces to break at. Without this a crawl of a
+  site with long paths pushed the whole page sideways at 320px (1.4.10 Reflow) — the same
+  guard `.evidence dd` already carries, for the same reason.
+*/
 .pages-seen {
   font-size: var(--size-s);
   margin: 0;
   padding-left: var(--space-5);
+  overflow-wrap: anywhere;
 }
 
 /* ---------------------------------------------------------------- tables */
@@ -474,7 +480,28 @@ a:hover {
   font-variant-numeric: tabular-nums;
 }
 
+/*
+  A zero is context, not a result. The band strip has always said so by weight and colour;
+  the tables now agree, so a row of counts reads as the one number that is not nothing.
+  `--ink-soft` on the sheet is 7.54:1, well past 1.4.3.
+*/
+.data-table td.num[data-zero='true'] {
+  color: var(--ink-soft);
+  font-weight: 400;
+}
+
+/*
+  `position: relative` here is load-bearing, not decoration.
+
+  `.visually-hidden` is `position: absolute` with no offsets, so without a positioned
+  ancestor its containing block is the initial containing block rather than this scroller.
+  A hidden "Actions" column header sitting 900px along a horizontally scrolled table was
+  therefore laid out against the viewport and stretched the document to 887px at a 320px
+  viewport: the whole page scrolled sideways, with nothing out there to read
+  (WCAG 1.4.10 Reflow). Positioning the scroller keeps its own hidden text inside it.
+*/
 .table-scroll {
+  position: relative;
   overflow-x: auto;
 }
 
@@ -605,6 +632,31 @@ input[type='number'] {
   cursor: not-allowed;
 }
 
+/*
+  A disclosure triangle is a pointer target, and most of ours carry `.small` text: 14.4px
+  at line-height 1.55 is a 22px box, under the 24px WCAG 2.2 asks for in 2.5.8 Target Size
+  (Minimum). The padding is the whole fix; the marker stays because the display type does.
+*/
+summary {
+  cursor: pointer;
+  min-height: 1.5rem;
+  padding-block: var(--space-1);
+}
+
+/*
+  A disclosure that is the whole of a sheet is part of that sheet, not a line floating on the
+  ground beside it. Used on the compare screen, where "Show the 12 findings" sat bare next to
+  two bordered panels saying "Nothing in this group".
+*/
+.sheet > details > summary {
+  padding: var(--space-4) var(--space-5);
+  font-weight: 600;
+}
+
+.sheet > details[open] > summary {
+  border-bottom: 1px solid var(--rule);
+}
+
 .filters {
   display: flex;
   flex-wrap: wrap;
@@ -655,6 +707,14 @@ input[type='number'] {
 .empty {
   padding: var(--space-6) var(--space-5);
   text-align: left;
+}
+
+/* A placeholder for a layout that has not arrived. Never animated — see LoadingPanel.tsx. */
+.placeholder-bar {
+  display: block;
+  height: 0.75rem;
+  border-radius: 2px;
+  background: var(--ground);
 }
 
 .visually-hidden {

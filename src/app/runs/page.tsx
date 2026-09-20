@@ -101,9 +101,12 @@ export default async function RunsPage() {
         </div>
       ) : (
         <section aria-labelledby="runs-heading" className="stack-tight">
-          <h2 id="runs-heading" className="visually-hidden">
-            Your runs
-          </h2>
+          {/*
+            Visible, unlike the other headings' hidden siblings elsewhere: this is the table
+            the page is named after, and it was the only block on the screen without a
+            heading of its own, sitting below two forms that had one.
+          */}
+          <h2 id="runs-heading">Your runs</h2>
           <div className="sheet table-scroll">
             <table className="data-table">
               <caption className="visually-hidden">
@@ -150,18 +153,35 @@ export default async function RunsPage() {
                     </th>
                     <td>{run.kind === 'crawl' ? 'Crawl' : 'Scan'}</td>
                     {BANDS.map((band) => (
-                      <td key={band} className="num">
+                      <td key={band} className="num" data-zero={run.site_bands[band] === 0}>
                         {run.site_bands[band]}
                       </td>
                     ))}
                     <td>{formatDateTime(run.created_at)}</td>
-                    <td>
+                    {/* Without this the column collapses to its longest word and the
+                        disclosure marker sits on a line of its own above "Delete". */}
+                    <td style={{ whiteSpace: 'nowrap' }}>
                       <details>
-                        <summary className="small">Delete</summary>
+                        {/*
+                          Every row's control said only "Delete". A screen reader lists them
+                          as four identical controls with nothing to tell them apart, so the
+                          run each one would delete is named in the control itself (2.4.6).
+                        */}
+                        <summary className="small">
+                          Delete
+                          <span className="visually-hidden">
+                            {' '}
+                            {run.label ?? run.target_url}
+                          </span>
+                        </summary>
                         <form action={removeRun} style={{ marginTop: 'var(--space-2)' }}>
                           <input type="hidden" name="id" value={run.id} />
                           <button type="submit" className="button button--danger">
                             Delete this run
+                            <span className="visually-hidden">
+                              {' '}
+                              — {run.label ?? run.target_url}
+                            </span>
                           </button>
                         </form>
                       </details>

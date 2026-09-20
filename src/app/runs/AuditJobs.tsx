@@ -28,9 +28,14 @@ export function AuditJobs({ jobs, now }: { jobs: AuditJob[]; now: Date }) {
       <h2 id="audits-heading">Your audits</h2>
       <AuditRefresher active={active} jobs={announced} />
       {jobs.length === 0 ? (
-        <p className="prose small muted">
-          No audits yet. Audits you start above are listed here, newest first.
-        </p>
+        // In a sheet, as the run list's own empty state is. Every other block on this screen
+        // is a bordered panel, and a bare line of grey text read as something half-rendered.
+        <div className="sheet">
+          <p className="sheet__body prose small muted">
+            No audits yet. Audits you start above are listed here, newest first, and each one
+            becomes a run when you open its results.
+          </p>
+        </div>
       ) : (
         <>
           <div className="sheet table-scroll">

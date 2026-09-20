@@ -8,14 +8,12 @@ import { PagesTable, type NotVisited, type SkippedEntry } from '@/components/Pag
 import { ReviewSummary } from '@/components/ReviewSummary';
 import { SetupNotice } from '@/components/SetupNotice';
 import { loadReviewData } from '@/lib/db/reviews';
-import { listRuns, loadRun } from '@/lib/db/runs';
+import { listRuns, loadRun, loadRunSummary } from '@/lib/db/runs';
 import { countDecisions, reviewedTotal } from '@/lib/review/decisions';
 import { bandDelta, numberRuns, previousRun } from '@/lib/report/history';
 import { historyHref } from '@/lib/links';
 import { formatDateTime, pluralise } from '@/lib/format';
 import { isConfigured } from '@/lib/supabase/config';
-
-export const metadata: Metadata = { title: 'Run' };
 
 /*
  * Never prerendered. These pages show one user's data, and what they show depends on the
@@ -28,6 +26,24 @@ export const dynamic = 'force-dynamic';
 
 type Params = { id: string };
 type Search = Record<string, string | string[] | undefined>;
+
+/*
+ * Every run page used to be titled "Run — AccessLens". Open three runs in three tabs and the
+ * tab strip, the browser history and a screen reader's window list all read the same word
+ * three times, which is what 2.4.2 Page Titled is for. The label the user gave the run, or
+ * the address it looked at, is the thing that tells them apart.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<Params>;
+}): Promise<Metadata> {
+  if (!isConfigured()) return { title: 'Run' };
+  const { id } = await params;
+  const run = await loadRunSummary(id).catch(() => null);
+  if (run === null) return { title: 'Run not found' };
+  return { title: `${run.kind === 'crawl' ? 'Crawl' : 'Scan'} of ${run.label ?? run.target_url}` };
+}
 
 /** `run_meta` is whatever the CLI wrote. Read it defensively; never assume a shape. */
 function readMeta(meta: Record<string, unknown>) {

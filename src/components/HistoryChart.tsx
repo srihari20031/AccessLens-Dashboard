@@ -19,7 +19,21 @@ const ROW_HEIGHT = 72;
 const LABEL_SPACE = 18; // under the baseline, for run numbers
 const VALUE_SPACE = 16; // above the tallest bar, for its count
 const SLOT = 44;
-const BAR = 20;
+const WIDE_SLOT = 108; // when there are few runs; see `slotFor`
+const BAR_RATIO = 0.45;
+
+/*
+ * How much width one run gets.
+ *
+ * At the narrow slot a site with two runs drew a 88px chart against 900px of empty row, which
+ * read as something that had failed to load rather than as a small chart. Below eight runs the
+ * slot widens to fill a useful part of the row, and from eight it goes back to the narrow one
+ * so a long history still fits without scrolling.
+ */
+function slotFor(runs: number): number {
+  if (runs >= 8) return SLOT;
+  return Math.min(WIDE_SLOT, Math.max(SLOT, Math.floor(560 / Math.max(runs, 1))));
+}
 
 export function HistoryChart<T extends HistoryRun>({
   timeline,
@@ -27,7 +41,9 @@ export function HistoryChart<T extends HistoryRun>({
   timeline: TimelineEntry<T>[];
 }) {
   const max = Math.max(1, ...timeline.flatMap((entry) => BANDS.map((b) => entry.run.site_bands[b])));
-  const width = Math.max(timeline.length * SLOT, SLOT * 4);
+  const slot = slotFor(timeline.length);
+  const bar = Math.round(slot * BAR_RATIO);
+  const width = Math.max(timeline.length * slot, slot * 2);
 
   return (
     <div className="history-chart">
@@ -57,19 +73,19 @@ export function HistoryChart<T extends HistoryRun>({
               {timeline.map((entry, index) => {
                 const value = entry.run.site_bands[band];
                 const height = (value / max) * ROW_HEIGHT;
-                const x = index * SLOT + (SLOT - BAR) / 2;
+                const x = index * slot + (slot - bar) / 2;
                 const baseline = VALUE_SPACE + ROW_HEIGHT;
                 const tip = `Run #${entry.number}, ${formatDate(entry.run.created_at)}: ${value} ${BAND_LABELS[band].toLowerCase()}`;
                 return (
                   <g key={entry.run.id}>
                     <title>{tip}</title>
                     {/* A hit area the full height of the slot, larger than the bar itself. */}
-                    <rect x={index * SLOT} y={0} width={SLOT} height={baseline} fill="transparent" />
+                    <rect x={index * slot} y={0} width={slot} height={baseline} fill="transparent" />
                     {value > 0 ? (
-                      <path d={roundedTopBar(x, baseline, BAR, height)} className="history-chart__bar" />
+                      <path d={roundedTopBar(x, baseline, bar, height)} className="history-chart__bar" />
                     ) : null}
                     <text
-                      x={x + BAR / 2}
+                      x={x + bar / 2}
                       y={baseline - height - 4}
                       textAnchor="middle"
                       className="history-chart__value"
@@ -77,7 +93,7 @@ export function HistoryChart<T extends HistoryRun>({
                       {value}
                     </text>
                     <text
-                      x={x + BAR / 2}
+                      x={x + bar / 2}
                       y={baseline + LABEL_SPACE - 4}
                       textAnchor="middle"
                       className="history-chart__tick"

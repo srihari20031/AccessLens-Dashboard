@@ -203,11 +203,13 @@ async function Comparison({ baseId, headId }: { baseId: string; headId: string }
                     </div>
                   </th>
                   {BANDS.map((band) => (
-                    <td key={band} className="num">
+                    <td key={band} className="num" data-zero={group.bands[band] === 0}>
                       {group.bands[band]}
                     </td>
                   ))}
-                  <td className="num">{failureTotal(group.bands)}</td>
+                  <td className="num" data-zero={failureTotal(group.bands) === 0}>
+                    {failureTotal(group.bands)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -244,16 +246,18 @@ function DiffSection({ group }: { group: DiffGroup }) {
           <p className="sheet__body muted small">Nothing in this group.</p>
         </div>
       ) : (
-        <details>
-          <summary className="small">
-            Show the {total} {pluralise(total, 'finding', 'findings')}
-          </summary>
-          <div className="sheet" style={{ marginTop: 'var(--space-2)' }}>
-            {group.findings.map((finding) => (
-              <FindingCard key={finding.finding_hash} finding={finding} />
-            ))}
-          </div>
-        </details>
+        <div className="sheet">
+          <details>
+            <summary className="small">
+              Show the {total} {pluralise(total, 'finding', 'findings')}
+            </summary>
+            <div>
+              {group.findings.map((finding) => (
+                <FindingCard key={finding.finding_hash} finding={finding} />
+              ))}
+            </div>
+          </details>
+        </div>
       )}
     </section>
   );

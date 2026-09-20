@@ -11,7 +11,6 @@ import { toImportPayload } from '@/lib/report/map';
 import { parseReport } from '@/lib/report/schema';
 import { pluralise } from '@/lib/format';
 
-export const metadata: Metadata = { title: 'Preview' };
 
 /**
  * The run-detail screen rendered straight from a committed sample report.
@@ -43,6 +42,18 @@ function isFixtureKey(value: string): value is FixtureKey {
 
 type Search = Record<string, string | string[] | undefined>;
 
+/** Which sample is on screen, so five previews in five tabs are five different titles. */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Search>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const raw = Array.isArray(params.report) ? params.report[0] : params.report;
+  const key: FixtureKey = raw !== undefined && isFixtureKey(raw) ? raw : 'crawl';
+  return { title: `Preview — ${FIXTURES[key].name}` };
+}
+
 export default async function PreviewPage({ searchParams }: { searchParams: Promise<Search> }) {
   const params = await searchParams;
   const raw = Array.isArray(params.report) ? params.report[0] : params.report;
@@ -71,8 +82,15 @@ export default async function PreviewPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="stack">
+      {/*
+        The notice's "Preview" was an <h2> standing before the page's own <h1>, so the
+        outline began at level 2 and dropped to level 1. It is a label on a notice, not a
+        section of the document, so it is written as one.
+      */}
       <div className="notice notice--ok">
-        <h2 className="small">Preview</h2>
+        <p className="small" style={{ fontWeight: 600 }}>
+          Preview
+        </p>
         <p className="prose small">
           This is the run-detail screen rendered from a committed sample report in{' '}
           <code className="mono">web/fixtures/</code>, through the same validation and mapping an

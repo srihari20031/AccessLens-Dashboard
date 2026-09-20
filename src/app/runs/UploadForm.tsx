@@ -9,7 +9,9 @@ export function UploadForm() {
   const [state, formAction, pending] = useActionState(uploadReport, EMPTY_UPLOAD_STATE);
 
   return (
-    <form action={formAction} className="sheet">
+    // Named by its own heading, as the audit form beside it is, so a screen reader's list of
+    // forms says which is which. The id was already here; nothing pointed at it.
+    <form action={formAction} className="sheet" aria-labelledby="upload-heading">
       <div className="sheet__body stack">
         <div className="stack-tight">
           <h2 id="upload-heading">Upload a report</h2>
