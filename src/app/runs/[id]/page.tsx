@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { BandSentence, BandStrip } from '@/components/BandStrip';
-import { FindingsSection, readFilters } from '@/components/FindingsSection';
+import { FindingsSection, readExpand, readFilters } from '@/components/FindingsSection';
 import { PagesTable, type NotVisited, type SkippedEntry } from '@/components/PagesTable';
 import { PatchSummary } from '@/components/PatchSummary';
 import { ReviewSummary } from '@/components/ReviewSummary';
@@ -101,7 +101,9 @@ export default async function RunPage({
   if (loaded === null) notFound();
 
   const { run, pages, findings } = loaded;
-  const filters = readFilters(await searchParams);
+  const search = await searchParams;
+  const filters = readFilters(search);
+  const expand = readExpand(search);
   const meta = readMeta(run.run_meta);
   const isCrawl = run.kind === 'crawl';
 
@@ -216,7 +218,12 @@ export default async function RunPage({
         data={patchData}
       />
 
-      <FindingsSection findings={findings} filters={filters} action={`/runs/${run.id}`} />
+      <FindingsSection
+        findings={findings}
+        filters={filters}
+        expand={expand}
+        action={`/runs/${run.id}`}
+      />
 
       <section aria-labelledby="how-heading" className="stack-tight">
         <h2 id="how-heading">How this run was made</h2>

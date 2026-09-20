@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { BandChips } from '@/components/BandStrip';
 import { FindingCard } from '@/components/FindingCard';
 import { SetupNotice } from '@/components/SetupNotice';
 import { listRuns, loadFindings, loadRunSummary, type RunSummary } from '@/lib/db/runs';
@@ -172,7 +173,32 @@ async function Comparison({ baseId, headId }: { baseId: string; headId: string }
 
       <section aria-labelledby="summary-heading" className="stack-tight">
         <h2 id="summary-heading">What changed</h2>
-        <div className="sheet table-scroll">
+
+        {/* Cards below 40rem, table above — see `.narrow-cards` in globals.css. */}
+        <p className="small muted narrow-caption">
+          {runName(base)} ({formatDateTime(base.created_at)}) compared with {runName(head)} (
+          {formatDateTime(head.created_at)})
+        </p>
+        <ul className="sheet narrow-cards">
+          {[diff.new, diff.fixed, diff.stillPresent].map((group) => (
+            <li key={group.status} className="narrow-card">
+              <div className="stack-tight">
+                <span style={{ fontWeight: 600 }}>{DIFF_LABELS[group.status]}</span>
+                <span className="xsmall muted">{DIFF_DESCRIPTIONS[group.status]}</span>
+              </div>
+              <BandChips
+                counts={group.bands}
+                label={`${DIFF_LABELS[group.status]} by severity band`}
+              />
+              <span className="xsmall muted">
+                {failureTotal(group.bands)}{' '}
+                {pluralise(failureTotal(group.bands), 'failure', 'failures')} in total
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="sheet table-scroll wide-table">
           <table className="data-table">
             <caption>
               {runName(base)} ({formatDateTime(base.created_at)}) compared with {runName(head)} (
@@ -253,7 +279,11 @@ function DiffSection({ group }: { group: DiffGroup }) {
             </summary>
             <div>
               {group.findings.map((finding) => (
-                <FindingCard key={finding.finding_hash} finding={finding} />
+                <FindingCard
+                  key={finding.finding_hash}
+                  finding={finding}
+                  open={finding.band === 'critical'}
+                />
               ))}
             </div>
           </details>

@@ -13,6 +13,29 @@ import { FindingCard } from './FindingCard';
 
 export type FindingFilters = { band: string; criterion: string; page: string };
 
+/**
+ * Which findings are open: everything, nothing, or the default (criticals only).
+ *
+ * It is a query parameter rather than client state so that "Expand all" is a plain link and
+ * works with JavaScript off — the same decision as the filters below it, and the same cost:
+ * it is a page navigation, so focus returns to the top. A `<details name>` group would have
+ * needed no navigation at all, but that makes an accordion where opening one closes the rest,
+ * which is the opposite of expanding them all.
+ */
+export type FindingExpansion = 'all' | 'none' | null;
+
+export function readExpand(params: Record<string, string | string[] | undefined>): FindingExpansion {
+  const value = Array.isArray(params.expand) ? params.expand[0] : params.expand;
+  return value === 'all' || value === 'none' ? value : null;
+}
+
+/** Open by default: a critical finding, and nothing else. */
+function isOpen(band: Band, expand: FindingExpansion): boolean {
+  if (expand === 'all') return true;
+  if (expand === 'none') return false;
+  return band === 'critical';
+}
+
 export function readFilters(params: Record<string, string | string[] | undefined>): FindingFilters {
   const one = (value: string | string[] | undefined): string =>
     Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
@@ -52,11 +75,13 @@ function pagesOf(findings: FindingRow[]): string[] {
 export function FindingsSection({
   findings,
   filters,
+  expand = null,
   action,
   hiddenFields = {},
 }: {
   findings: FindingRow[];
   filters: FindingFilters;
+  expand?: FindingExpansion;
   action: string;
   /** Query parameters the filter form must carry through, e.g. which sample report is shown. */
   hiddenFields?: Record<string, string>;
@@ -70,12 +95,27 @@ export function FindingsSection({
   return (
     <section aria-labelledby="findings-heading" className="stack">
       <div className="page-head" style={{ marginBottom: 0 }}>
-        <h2 id="findings-heading">Findings</h2>
-        <p className="muted small" role="status">
-          Showing {shown.length} of {findings.length}{' '}
-          {pluralise(findings.length, 'finding', 'findings')}
-          {filtered ? ' (filtered)' : ''}
-        </p>
+        <div className="stack-tight">
+          <h2 id="findings-heading">Findings</h2>
+          <p className="muted small" role="status">
+            Showing {shown.length} of {findings.length}{' '}
+            {pluralise(findings.length, 'finding', 'findings')}
+            {filtered ? ' (filtered)' : ''}. Each one opens for its element, evidence and
+            source line; criticals start open.
+          </p>
+        </div>
+        {shown.length > 0 ? (
+          <div className="row">
+            <a className="button button--quiet" href={expandHref(action, hiddenFields, filters, 'all')}>
+              Expand all
+              <span className="visually-hidden"> findings</span>
+            </a>
+            <a className="button button--quiet" href={expandHref(action, hiddenFields, filters, 'none')}>
+              Collapse all
+              <span className="visually-hidden"> findings</span>
+            </a>
+          </div>
+        ) : null}
       </div>
 
       <form method="get" action={action} className="sheet">
@@ -83,6 +123,8 @@ export function FindingsSection({
           {Object.entries(hiddenFields).map(([name, value]) => (
             <input key={name} type="hidden" name={name} value={value} />
           ))}
+          {/* Filtering must not silently re-collapse what the reader expanded. */}
+          {expand !== null ? <input type="hidden" name="expand" value={expand} /> : null}
           <div className="field">
             <label htmlFor="filter-band">Severity band</label>
             <select id="filter-band" name="band" defaultValue={filters.band}>
@@ -125,7 +167,7 @@ export function FindingsSection({
             Apply filters
           </button>
           {filtered ? (
-            <a className="button button--quiet" href={clearHref(action, hiddenFields)}>
+            <a className="button button--quiet" href={clearHref(action, hiddenFields, expand)}>
               Clear filters
             </a>
           ) : null}
@@ -142,19 +184,58 @@ export function FindingsSection({
         </div>
       ) : (
         BANDS.filter((band) => counts[band] > 0).map((band) => (
-          <BandGroup key={band} band={band} findings={shown.filter((f) => f.band === band)} />
+          <BandGroup
+            key={band}
+            band={band}
+            findings={shown.filter((f) => f.band === band)}
+            expand={expand}
+          />
         ))
       )}
     </section>
   );
 }
 
-function clearHref(action: string, hiddenFields: Record<string, string>): string {
-  const query = new URLSearchParams(hiddenFields).toString();
+function href(action: string, params: Record<string, string>): string {
+  const query = new URLSearchParams(params).toString();
   return query === '' ? action : `${action}?${query}`;
 }
 
-function BandGroup({ band, findings }: { band: Band; findings: FindingRow[] }) {
+/** Clearing the filters leaves the disclosure state alone; it is not one of them. */
+function clearHref(
+  action: string,
+  hiddenFields: Record<string, string>,
+  expand: FindingExpansion,
+): string {
+  return href(action, expand === null ? hiddenFields : { ...hiddenFields, expand });
+}
+
+/*
+ * A plain link, not a button: no script, its own URL, and the browser's own back button
+ * undoes it. It carries the filters through so expanding does not also widen the view.
+ */
+function expandHref(
+  action: string,
+  hiddenFields: Record<string, string>,
+  filters: FindingFilters,
+  expand: 'all' | 'none',
+): string {
+  const params: Record<string, string> = { ...hiddenFields, expand };
+  if (filters.band) params.band = filters.band;
+  if (filters.criterion) params.criterion = filters.criterion;
+  if (filters.page) params.page = filters.page;
+  return href(action, params);
+}
+
+function BandGroup({
+  band,
+  findings,
+  expand,
+}: {
+  band: Band;
+  findings: FindingRow[];
+  expand: FindingExpansion;
+}) {
   const headingId = `band-${band}`;
   return (
     <section aria-labelledby={headingId} className="stack-tight">
@@ -168,7 +249,11 @@ function BandGroup({ band, findings }: { band: Band; findings: FindingRow[] }) {
       </div>
       <div className="sheet">
         {findings.map((finding) => (
-          <FindingCard key={finding.finding_hash} finding={finding} />
+          <FindingCard
+            key={finding.finding_hash}
+            finding={finding}
+            open={isOpen(finding.band, expand)}
+          />
         ))}
       </div>
     </section>

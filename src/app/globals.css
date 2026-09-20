@@ -498,6 +498,86 @@ a:hover {
   margin-bottom: var(--space-3);
 }
 
+/* ------------------------------------------------- findings, collapsed
+
+   A finding that renders everything it has — message, element, selector, evidence table,
+   focus replay, source line, pages — costs about 650px. Fourteen of them made a run page
+   9,722px tall and the patch screen 10,991px, which is not a list anybody can work down.
+   Collapsed, a finding is its band, its criterion, its element and its message: the four
+   things a reader scans by, and the four the summary carries.
+
+   `<summary>` keeps its `display: list-item`, so the disclosure marker stays; the heading
+   inside it is `display: inline` so the marker sits beside it rather than on a line of its
+   own. These rules have to out-specify `.sheet > details > summary`, which a finding in a
+   findings list matches, hence the child combinator on `.finding`. */
+
+.finding--collapsible {
+  padding: var(--space-4) var(--space-5);
+}
+
+.finding > details > .finding__summary {
+  padding: 0;
+  font-weight: 400;
+  border-bottom: 0;
+}
+
+.finding > details[open] > .finding__summary {
+  border-bottom: 0;
+  margin-bottom: var(--space-3);
+}
+
+.finding__summary > .finding__criterion {
+  display: inline;
+}
+
+/* The element and the message, one line each. Both are truncated rather than wrapped: the
+   summary is a place to recognise a finding, and the body below it has the whole of both. */
+.finding__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-1);
+  min-width: 0;
+}
+
+.finding__element {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 34ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--size-s);
+  color: var(--ink-soft);
+}
+
+.finding__excerpt {
+  flex: 1 1 18rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--size-s);
+}
+
+.finding__body {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--rule);
+}
+
+/* The decision controls sit outside the disclosure on the patch screen, so a reviewer can
+   accept a proposal without opening it. Tighter than the review screen's, where one finding
+   fills the panel on its own. */
+.finding--collapsible > .decision {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.finding--collapsible > .decision .decision__set > legend {
+  margin-bottom: var(--space-2);
+}
+
 .code-well {
   display: block;
   overflow-x: auto;
@@ -597,6 +677,91 @@ a:hover {
 .table-scroll {
   position: relative;
   overflow-x: auto;
+}
+
+/* --------------------------------------------------------- tables, narrow
+
+   Below 40rem a `data-table` has to be scrolled sideways to reach the numbers that matter.
+   At 390px the runs table showed "Run" and "Kind" and put Critical, Serious, Moderate and
+   Needs manual review out of sight, so the one question the page exists to answer — does
+   this run have three criticals? — could not be answered without dragging the table.
+
+   The rows are rendered a second time as a list of cards and the table is hidden, rather
+   than the table being restyled. `display: block` on table elements takes their roles away
+   in Chromium and Firefox, and the header associations are the only thing tying a "3" to
+   "Critical"; a second rendering keeps real markup on both sides of the breakpoint. The copy
+   that is not in use is `display: none`, which removes it from the accessibility tree as
+   well, so nothing is announced twice. */
+
+.narrow-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.narrow-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+}
+
+/* A visible table caption has to be shown above the cards when the table is hidden. */
+.narrow-caption {
+  display: none;
+}
+
+@media (max-width: 40rem) {
+  .narrow-cards {
+    display: block;
+  }
+
+  .narrow-caption {
+    display: block;
+  }
+
+  .wide-table {
+    display: none;
+  }
+}
+
+/* The band counts of one row, written out. The same construction as `.band-tag`: the wash,
+   the band's own border and the band's word, so nothing here is carried by colour alone. */
+.band-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.band-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 2px var(--space-2);
+  background: var(--wash, var(--ground));
+  border: 1px solid var(--band, var(--rule-strong));
+  border-radius: 2px;
+  color: var(--band, var(--ink));
+  font-size: var(--size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.band-chip dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A zero is context, not a result — the same rule the band strip and the tables follow.
+   `--ink-soft` is 7.54:1 on the sheet and `--rule-strong` 4.05:1, so the quieter chip is
+   still past 1.4.3 and 1.4.11, and the band is still named in words either way. */
+.band-chip[data-zero='true'] {
+  background: var(--sheet);
+  border-color: var(--rule-strong);
+  color: var(--ink-soft);
+  font-weight: 500;
 }
 
 /* ---------------------------------------------------------------- forms */
@@ -752,6 +917,19 @@ summary {
 
 .sheet > details[open] > summary {
   border-bottom: 1px solid var(--rule);
+}
+
+/*
+  The same, for a disclosure that *is* a sheet rather than sitting inside one — the upload
+  form on the runs page. Its heading keeps its own type; only the padding is borrowed, so the
+  closed panel reads as the section heading it always was.
+*/
+.sheet > summary {
+  padding: var(--space-4) var(--space-5);
+}
+
+.sheet > summary > h2 {
+  display: inline;
 }
 
 .filters {
@@ -1086,6 +1264,15 @@ textarea {
   margin-top: var(--space-3);
   border: 1px solid var(--rule);
   border-radius: 2px;
+}
+
+/* Beside the other decisions rather than below them; its own line only once it is open. */
+.decision__buttons > .decision__panel {
+  margin-top: 0;
+}
+
+.decision__buttons > .decision__panel[open] {
+  flex-basis: 100%;
 }
 
 .decision__panel > summary {

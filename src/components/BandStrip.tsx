@@ -82,6 +82,27 @@ export function BandSentence({ counts }: { counts: BandCounts }) {
   );
 }
 
+/**
+ * The four band counts as inline chips.
+ *
+ * What a `data-table` row of counts becomes below 40rem, where the table would have to be
+ * scrolled sideways to reach the numbers that matter. Each chip writes its band out in words
+ * beside the number — colour is never the only signal — and a zero is drawn quieter than a
+ * real number, the same distinction the strip and the tables already make.
+ */
+export function BandChips({ counts, label }: { counts: BandCounts; label: string }) {
+  return (
+    <dl className="band-chips" aria-label={label}>
+      {BANDS.map((band) => (
+        <div key={band} className={`band-chip band-${band}`} data-zero={counts[band] === 0}>
+          <dt>{BAND_LABELS[band]}</dt>
+          <dd>{counts[band]}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 export function BandTag({ band }: { band: Band }) {
   return <span className={`band-tag band-${band}`}>{BAND_LABELS[band]}</span>;
 }

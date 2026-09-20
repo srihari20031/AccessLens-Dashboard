@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { BandChips } from '@/components/BandStrip';
 import { SetupNotice } from '@/components/SetupNotice';
 import { listRuns } from '@/lib/db/runs';
 import { BANDS, BAND_LABELS } from '@/lib/report/bands';
+import type { RunSummary } from '@/lib/db/runs';
 import { formatDateTime } from '@/lib/format';
 import { historyHref } from '@/lib/links';
 import { numberRuns } from '@/lib/report/history';
@@ -81,7 +83,11 @@ export default async function RunsPage() {
         </p>
       )}
 
-      <UploadForm />
+      {/*
+        Collapsed unless there is nothing to list: the list is what a returning user came for,
+        and this used to be the tallest block on the page, above it, on every visit.
+      */}
+      <UploadForm defaultOpen={runs.length === 0} />
 
       {runs.length === 0 ? (
         <div className="sheet">
@@ -107,7 +113,22 @@ export default async function RunsPage() {
             heading of its own, sitting below two forms that had one.
           */}
           <h2 id="runs-heading">Your runs</h2>
-          <div className="sheet table-scroll">
+
+          {/*
+            Below 40rem the table is replaced by this list rather than restyled. Setting
+            `display: block` on table elements takes their roles away in Chromium and Firefox,
+            and the header associations are the only thing tying a "3" to "Critical"; a second
+            rendering keeps real markup on both sides of the breakpoint. Whichever copy is not
+            in use is `display: none`, which takes it out of the accessibility tree too, so
+            nothing here is announced twice.
+          */}
+          <ul className="sheet narrow-cards">
+            {runs.map((run) => (
+              <RunCard key={run.id} run={run} number={numbers.get(run.id)} />
+            ))}
+          </ul>
+
+          <div className="sheet table-scroll wide-table">
             <table className="data-table">
               <caption className="visually-hidden">
                 Uploaded runs with their severity band counts
@@ -198,5 +219,55 @@ export default async function RunsPage() {
         </section>
       )}
     </div>
+  );
+}
+
+/**
+ * One run, for the narrow layout.
+ *
+ * The same facts as the table row, in the order they are asked for: which run, then how bad
+ * it is. The counts are chips rather than columns because at 390px the columns were behind a
+ * sideways scroll, so "does this run have three criticals?" could not be answered without
+ * dragging the table.
+ */
+function RunCard({ run, number }: { run: RunSummary; number: number | undefined }) {
+  const name = run.label ?? run.target_url;
+
+  return (
+    <li className="narrow-card">
+      <div className="stack-tight">
+        <Link href={`/runs/${run.id}`} style={{ fontWeight: 600 }}>
+          {name}
+        </Link>
+        {run.label !== null ? <div className="mono xsmall muted">{run.target_url}</div> : null}
+        <div className="xsmall muted">
+          {run.kind === 'crawl' ? 'Crawl' : 'Scan'} · Run #{number} of this site ·{' '}
+          <Link href={historyHref(run)}>
+            history
+            <span className="visually-hidden">
+              {' '}
+              of {run.kind} runs of {run.target_url}
+            </span>
+          </Link>{' '}
+          · accesslens {run.tool_version} · uploaded {formatDateTime(run.created_at)}
+        </div>
+      </div>
+
+      <BandChips counts={run.site_bands} label={`Severity band counts for ${name}`} />
+
+      <details>
+        <summary className="small">
+          Delete
+          <span className="visually-hidden"> {name}</span>
+        </summary>
+        <form action={removeRun} style={{ marginTop: 'var(--space-2)' }}>
+          <input type="hidden" name="id" value={run.id} />
+          <button type="submit" className="button button--danger">
+            Delete this run
+            <span className="visually-hidden"> — {name}</span>
+          </button>
+        </form>
+      </details>
+    </li>
   );
 }

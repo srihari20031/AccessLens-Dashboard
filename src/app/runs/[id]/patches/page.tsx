@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { BandTag } from '@/components/BandStrip';
+import { readExpand, type FindingExpansion } from '@/components/FindingsSection';
 import { PatchSummary } from '@/components/PatchSummary';
 import { SetupNotice } from '@/components/SetupNotice';
 import { loadPatchData, type PatchRecord } from '@/lib/db/patches';
@@ -38,11 +39,19 @@ export const metadata: Metadata = { title: 'Source patches' };
 export const dynamic = 'force-dynamic';
 
 type Params = { id: string };
+type Search = Record<string, string | string[] | undefined>;
 
-export default async function SourcePatchesPage({ params }: { params: Promise<Params> }) {
+export default async function SourcePatchesPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<Params>;
+  searchParams: Promise<Search>;
+}) {
   if (!isConfigured()) return <SetupNotice />;
 
   const { id } = await params;
+  const expand = readExpand(await searchParams);
   const loaded = await loadRun(id);
   if (loaded === null) notFound();
 
@@ -104,7 +113,7 @@ export default async function SourcePatchesPage({ params }: { params: Promise<Pa
           </p>
         </div>
       ) : (
-        <PatchesBody runId={run.id} findings={findings} data={data} />
+        <PatchesBody runId={run.id} findings={findings} data={data} expand={expand} />
       )}
     </div>
   );
@@ -121,10 +130,12 @@ function PatchesBody({
   runId,
   findings,
   data,
+  expand,
 }: {
   runId: string;
   findings: FindingRow[];
   data: NonNullable<Awaited<ReturnType<typeof loadPatchData>>>;
+  expand: FindingExpansion;
 }) {
   const patches = new Map(data.patches.map((row) => [row.finding_hash, row]));
   const reviews = new Map(data.reviews.map((row) => [row.finding_hash, row]));
@@ -176,18 +187,37 @@ function PatchesBody({
         </section>
       ) : (
         <>
-          <p className="prose small muted" role="status">
-            {items.length} of {findings.length}{' '}
-            {pluralise(findings.length, 'finding', 'findings')} in this run{' '}
-            {pluralise(items.length, 'has', 'have')} a proposed edit or a question. Findings with
-            neither are not listed here; the run page has all of them.
-          </p>
+          <div className="page-head" style={{ marginBottom: 0 }}>
+            <p className="prose small muted" role="status">
+              {items.length} of {findings.length}{' '}
+              {pluralise(findings.length, 'finding', 'findings')} in this run{' '}
+              {pluralise(items.length, 'has', 'have')} a proposed edit or a question. Findings
+              with neither are not listed here; the run page has all of them. Each proposal
+              opens for its edit or its question; criticals start open, and you can decide on
+              one without opening it.
+            </p>
+            {/*
+              Plain links, so expanding needs no script and has its own URL — the same
+              decision, and the same cost, as the findings filters.
+            */}
+            <div className="row">
+              <a className="button button--quiet" href={`/runs/${runId}/patches?expand=all`}>
+                Expand all
+                <span className="visually-hidden"> proposals</span>
+              </a>
+              <a className="button button--quiet" href={`/runs/${runId}/patches?expand=none`}>
+                Collapse all
+                <span className="visually-hidden"> proposals</span>
+              </a>
+            </div>
+          </div>
           {PATCH_STATUSES.map((status) => (
             <StatusSection
               key={status}
               runId={runId}
               status={status}
               items={items.filter((item) => item.patch.status === status)}
+              expand={expand}
             />
           ))}
         </>
@@ -207,10 +237,12 @@ function StatusSection({
   runId,
   status,
   items,
+  expand,
 }: {
   runId: string;
   status: PatchStatus;
   items: PatchItem[];
+  expand: FindingExpansion;
 }) {
   if (items.length === 0) return null;
   const headingId = `status-${status}`;
@@ -225,7 +257,12 @@ function StatusSection({
       </div>
       <div className="sheet">
         {items.map((item) => (
-          <PatchItemView key={item.patch.finding_hash} runId={runId} item={item} />
+          <PatchItemView
+            key={item.patch.finding_hash}
+            runId={runId}
+            item={item}
+            open={expand === 'all' || (expand === null && item.finding.band === 'critical')}
+          />
         ))}
       </div>
     </section>
@@ -241,7 +278,15 @@ function StatusSection({
  * `old_text` and `new_text` are fragments of somebody's HTML by definition, and rendering
  * either as markup would put live elements from an audited page into this one.
  */
-function PatchItemView({ runId, item }: { runId: string; item: PatchItem }) {
+function PatchItemView({
+  runId,
+  item,
+  open,
+}: {
+  runId: string;
+  item: PatchItem;
+  open: boolean;
+}) {
   const { finding, patch, review } = item;
   const decision = review?.decision ?? 'pending';
   const stale = patchChangedSinceDecision(patch.imported_at, review?.decided_at ?? null);
@@ -252,20 +297,26 @@ function PatchItemView({ runId, item }: { runId: string; item: PatchItem }) {
       : `${patch.path} line ${patch.start_line}`;
 
   return (
-    <article className={`finding band-${finding.band}`}>
-      <div className="finding__head">
-        <BandTag band={finding.band} />
-        <h3 className="finding__criterion">
-          <span className="mono">{finding.criterion}</span> {finding.criterion_name}
-        </h3>
-        <span className="status-tag" data-patch-status={patch.status}>
-          {PATCH_STATUS_LABELS[patch.status]}
-        </span>
-        <span className="status-tag" data-decision={decision}>
-          {PATCH_DECISION_SHORT_LABELS[decision]}
-        </span>
-      </div>
+    <article className={`finding finding--collapsible band-${finding.band}`}>
+      <details open={open}>
+        <summary className="finding__summary">
+          <h3 className="finding__criterion">
+            <BandTag band={finding.band} />{' '}
+            <span className="mono">{finding.criterion}</span> {finding.criterion_name}{' '}
+            <span className="status-tag" data-patch-status={patch.status}>
+              {PATCH_STATUS_LABELS[patch.status]}
+            </span>{' '}
+            <span className="status-tag" data-decision={decision}>
+              {PATCH_DECISION_SHORT_LABELS[decision]}
+            </span>
+          </h3>
+          <span className="finding__line">
+            <code className="finding__element mono">{finding.snippet}</code>
+            <span className="finding__excerpt">{finding.message}</span>
+          </span>
+        </summary>
 
+        <div className="finding__body">
       <p className="finding__message">{finding.message}</p>
 
       <dl className="evidence">
@@ -339,7 +390,15 @@ function PatchItemView({ runId, item }: { runId: string; item: PatchItem }) {
           </p>
         ) : null}
       </div>
+        </div>
+      </details>
 
+      {/*
+        Outside the disclosure, on purpose. A reviewer working down twenty proposals should be
+        able to accept one without opening it; the panel above is the evidence for the
+        decision, not the decision itself. The two status tags in the summary already say what
+        the patch is and what has been decided about it, so a closed row still reads whole.
+      */}
       <PatchDecisionForm
         runId={runId}
         findingHash={patch.finding_hash}

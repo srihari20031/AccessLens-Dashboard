@@ -316,6 +316,123 @@ four band tags, every status tag, the four button states and the focus-replay st
   in both. Its numbers are `--ink` and `--ink-soft` on the sheet, 13.12:1 and 7.46:1 in dark.
 - **Nobody has read the dark palette on a real screen in a dark room**, which is the condition
   it exists for, and nobody who uses assistive technology daily has seen either scheme.
+## Density and hierarchy, 20 September 2026 (`feat/ui-density`)
+
+A design review of full-page screenshots found three things the twelve rules cannot see, all
+of them about how much is on screen rather than whether it is reachable. Everything below is
+density and hierarchy; the design system — IBM Plex, the 2px radius, the hairlines, the band
+colours, the spacing scale — is untouched, and no token was renamed or moved.
+
+Measured from full-page screenshots of the demo-site scan (45 findings, 14 of them
+non-passing, with its 14 proposed patches), Chromium, `document.documentElement.scrollHeight`:
+
+| Page | 1280 before | 1280 after | 1280 collapsed | 390 before | 390 after |
+| --- | --- | --- | --- | --- | --- |
+| `/runs` | 1,418 | **1,028** | — | 1,882 | 1,958 |
+| a run's detail | 9,722 | **5,341** | **3,227** | 15,303 | **8,850** |
+| its source patches | 10,991 | **5,478** | **4,261** | 19,277 | **9,868** |
+| a crawl's detail | 3,157 | **2,380** | — | 4,704 | 5,197 |
+
+"After" is the default view, where criticals are open and nothing else is; "collapsed" is the
+same page with `?expand=none`. The two rows that grew are the two narrow layouts that now show
+band counts which were previously behind a horizontal scroll — 76px on `/runs` and 493px on a
+crawl, bought for four numbers per row that could not be read at all before.
+
+### Every finding and every patch rendered fully expanded
+
+A finding drew its message, element, selector, evidence table, focus replay, source line and
+pages the moment the page loaded — about 650px each. Fourteen of them is not a list anybody
+works down, and a crawl with a hundred would be hopeless.
+
+A finding is now a `<details>`, the disclosure pattern this repo already uses, and its summary
+carries the four things a reader scans by: the band tag, the criterion, the element and the
+message. The body is exactly what it was. The heading stays **inside** the summary, so the
+control and the thing it names are one line and both a screen reader's heading list and its
+control list say which finding this is; `<summary>` takes heading content, and the element and
+the message beside it are phrasing. Both of those lines are truncated with an ellipsis rather
+than wrapped — the summary is where a finding is recognised, and the body below has the whole
+of both.
+
+**Critical findings start open and nothing else does.** "Expand all" and "Collapse all" are
+plain links carrying an `expand` parameter, not buttons: no script, every view has its own
+URL, and the browser's back button undoes it. A `<details name=...>` group would have needed
+no navigation at all, but it makes an accordion — opening one closes the rest — which is the
+opposite of expanding them all. The cost is the one the filters already pay and record above:
+it is a page navigation, so focus returns to the top of the document.
+
+**On the patch screen the decision controls are deliberately outside the disclosure.** A
+reviewer working down twenty proposals should be able to accept one without opening it; the
+panel is the evidence for a decision, not the decision itself, and the summary already carries
+the patch's status tag and the decision tag, so a closed row reads whole. The reject panel
+moved into the same row as "Accept this edit" and "I have applied it", because twenty closed
+panels on lines of their own is most of a screen; it takes its own line once opened. Every
+decision control on both screens is still reachable, still a real submit button, and still
+works with JavaScript off.
+
+### At 390px the runs table hid the numbers that matter
+
+The table showed "Run" and "Kind"; Critical, Serious, Moderate and Needs manual review were
+behind a horizontal scroll, so the one question the page exists to answer — does this run have
+three criticals? — could not be answered without dragging the table sideways.
+
+Below 40rem each row is rendered instead as a list item with the band counts as chips, each
+naming its band in words beside the number and drawing a zero quieter than a real number, the
+same distinction the band strip and the tables already make. The runs list, the crawl's Pages
+table and the comparison's "What changed" table all do this.
+
+**The table is replaced, not restyled.** Setting `display: block` on table elements drops
+their roles in Chromium and Firefox, and the header associations are the only thing tying a
+"3" to "Critical", so a restyled table would have taken the labelling away at exactly the
+width where it is least recoverable. Rendering the rows a second time keeps real markup on
+both sides of the breakpoint: a list of `<li>`s, each with a `<dl>` of band to count.
+Whichever copy is not in use is `display: none`, which removes it from the accessibility tree
+as well — checked in Chromium's tree at both widths, where 390px exposes the list and the
+description lists and no `table` node, and 1280px exposes the table and no `listitem`.
+
+### The upload form dominated the runs page
+
+It was the tallest, brightest block on the screen, above the list, on every visit. It is a
+`<details>` now, labelled by the `<h2>` it already had, and it opens itself when there are no
+runs yet — the one visit where uploading *is* the task. `open` is passed once and never
+written again, so a panel the reader opened stays open across a rejected file and the error is
+never reported into something closed. The patch-set upload on the source-patches screen was
+the same shape and got the same treatment.
+
+### What was checked
+
+`uv run accesslens scan` was run against six screens as they now render — the runs list, a run
+detail, that run expanded, its patches, its patches expanded, and a crawl's detail — and
+reported **0 `fail` and 0 `needs-manual-review`** on every one of them (122, 354, 585, 440,
+623 and 241 findings). Measured in Chromium by hand: 0px of horizontal overflow at 320px on
+eight routes, every `<summary>`, `<button>` and button-styled link at least 24px in both
+dimensions on the three changed screens, and no duplicate `id` introduced by rendering a row
+twice.
+
+### Deliberately left, with the reason
+
+**The narrow layout has not been scanned by the tool.** `accesslens scan` has no viewport
+option, so the CLI always sees the wide layout and the cards are `display: none` to it. They
+were checked by hand instead — reflow at 320px, the accessibility tree at 390px, and the chip
+colour pairs, which are the ones `.band-tag` already uses, with a zero chip at `--ink-soft` on
+`--sheet` (7.54:1) inside a `--rule-strong` border (4.05:1). A viewport flag on the CLI would
+close this, and it is not a change to make the week of a demonstration.
+
+**Four `data-table`s still scroll sideways below 40rem**: the two on `/history`, the audit
+list on `/runs`, and the two decision-summary tables. The first two carry band counts and have
+the same defect; the last two are two columns wide and fit. They were left because each needs
+its own card renderer and its own reading, and the three the review actually named are done.
+`BandChips` and `.narrow-cards` are in place, so adding one is now a dozen lines.
+
+**A finding's summary and its body both carry the message.** The summary's copy is truncated
+to a line. Hiding it when the disclosure opens would save a line per open finding, but it
+would also change the accessible name of a control as a result of activating that control,
+which is worse than a repeated sentence.
+
+**While the upload form is closed, `/runs` reports four fewer `needs-manual-review` findings**
+— the 4 x 1.4.11 native-widget reviews on the file input, the two radios and the checkbox.
+Nothing about those controls changed; they are simply not rendered until the panel is opened,
+and the reviews come back when it is. The count in "What the tool reported" above was taken
+with them on screen.
 
 ## What this audit does not cover
 

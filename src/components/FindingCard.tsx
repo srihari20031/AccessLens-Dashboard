@@ -7,14 +7,25 @@ import { BandTag } from './BandStrip';
 import { FocusReplay } from './FocusReplay';
 
 /**
- * One finding.
+ * One finding, collapsed to a line.
+ *
+ * Every finding used to render everything it had — message, element, selector, evidence
+ * table, focus replay, source line, pages — the moment the page loaded. Fourteen of them made
+ * a run page 9,722 pixels tall, and a crawl of a real site would be hopeless. The body is the
+ * same as it was; it is behind a `<summary>` now, and the summary carries the four things a
+ * reader scans by: the band, the criterion, the element and the message.
+ *
+ * A `<details>` rather than a scripted panel, because it is the pattern this repo already uses
+ * and it is keyboard-operable with no JavaScript at all. `open` is decided by the caller —
+ * critical findings by default, everything by the expand control — and passed once, so
+ * closing one by hand is never undone under the reader.
  *
  * Everything that came out of the scanned page — the message, the selector, the snippet, the
  * evidence values — is placed in a text node. `snippet` is raw HTML captured from the page
  * being audited; React escapes it, and it must stay that way. There is no
  * `dangerouslySetInnerHTML` anywhere in this project.
  */
-export function FindingCard({ finding }: { finding: FindingRow }) {
+export function FindingCard({ finding, open = false }: { finding: FindingRow; open?: boolean }) {
   const replay = readFocusReplay(finding);
   // Only a replay that will actually render takes the evidence keys it replaces.
   const showReplay = replay !== null && replay.stops.length > 0;
@@ -24,52 +35,65 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
   const pages = finding.pages;
 
   return (
-    <article className={`finding band-${finding.band}`}>
-      <div className="finding__head">
-        <BandTag band={finding.band} />
-        <h3 className="finding__criterion">
-          <span className="mono">{finding.criterion}</span> {finding.criterion_name}
-        </h3>
-        <span className="muted small">{OUTCOME_LABELS[finding.outcome]}</span>
-      </div>
+    <article className={`finding finding--collapsible band-${finding.band}`}>
+      <details open={open}>
+        {/*
+          The heading stays inside the summary: the control and the thing it names are one
+          line, so a screen reader's heading list and its control list both say which finding
+          this is. `<summary>` takes heading content, and everything else here is phrasing.
+        */}
+        <summary className="finding__summary">
+          <h3 className="finding__criterion">
+            <BandTag band={finding.band} />{' '}
+            <span className="mono">{finding.criterion}</span> {finding.criterion_name}{' '}
+            <span className="muted small">{OUTCOME_LABELS[finding.outcome]}</span>
+          </h3>
+          <span className="finding__line">
+            <code className="finding__element mono">{finding.snippet}</code>
+            <span className="finding__excerpt">{finding.message}</span>
+          </span>
+        </summary>
 
-      <p className="finding__message">{finding.message}</p>
+        <div className="finding__body">
+          <p className="finding__message">{finding.message}</p>
 
-      <div className="stack-tight">
-        <div>
-          <span className="visually-hidden">Element</span>
-          <code className="code-well">{finding.snippet}</code>
+          <div className="stack-tight">
+            <div>
+              <span className="visually-hidden">Element</span>
+              <code className="code-well">{finding.snippet}</code>
+            </div>
+            <div>
+              <span className="visually-hidden">CSS selector</span>
+              <code className="code-well xsmall muted">{finding.selector}</code>
+            </div>
+          </div>
+
+          {evidence.length > 0 ? (
+            <>
+              <h4 className="visually-hidden">Evidence</h4>
+              <dl className="evidence" style={{ marginTop: 'var(--space-3)' }}>
+                {evidence.map(([key, value]) => (
+                  <div key={key} style={{ display: 'contents' }}>
+                    <dt>{formatEvidenceKey(key)}</dt>
+                    <dd className="mono">{formatEvidenceValue(value)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </>
+          ) : null}
+
+          {showReplay ? <FocusReplay data={replay} /> : null}
+
+          <SourceLine location={finding.source_location} />
+
+          {pages.length > 0 ? <PagesSeen pages={pages} /> : null}
+
+          <p className="xsmall muted" style={{ marginTop: 'var(--space-3)' }}>
+            Rule {finding.rule_id} version {finding.rule_version} · identity{' '}
+            <span className="mono">{finding.finding_hash.slice(0, 12)}</span>
+          </p>
         </div>
-        <div>
-          <span className="visually-hidden">CSS selector</span>
-          <code className="code-well xsmall muted">{finding.selector}</code>
-        </div>
-      </div>
-
-      {evidence.length > 0 ? (
-        <>
-          <h4 className="visually-hidden">Evidence</h4>
-          <dl className="evidence" style={{ marginTop: 'var(--space-3)' }}>
-            {evidence.map(([key, value]) => (
-              <div key={key} style={{ display: 'contents' }}>
-                <dt>{formatEvidenceKey(key)}</dt>
-                <dd className="mono">{formatEvidenceValue(value)}</dd>
-              </div>
-            ))}
-          </dl>
-        </>
-      ) : null}
-
-      {showReplay ? <FocusReplay data={replay} /> : null}
-
-      <SourceLine location={finding.source_location} />
-
-      {pages.length > 0 ? <PagesSeen pages={pages} /> : null}
-
-      <p className="xsmall muted" style={{ marginTop: 'var(--space-3)' }}>
-        Rule {finding.rule_id} version {finding.rule_version} · identity{' '}
-        <span className="mono">{finding.finding_hash.slice(0, 12)}</span>
-      </p>
+      </details>
     </article>
   );
 }
