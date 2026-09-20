@@ -105,41 +105,46 @@ export function PatchDecisionForm({
               <span className="visually-hidden"> — {about}</span>
             </button>
           ) : null}
-        </div>
 
-        <details className="decision__panel" open={review?.decision === 'rejected'}>
-          <summary>
-            {question ? 'Reject this question' : 'Reject this edit'}
-            <span className="visually-hidden"> — {about}</span>
-          </summary>
-          <div className="decision__panel-body stack-tight">
-            <label htmlFor={reasonId}>Why it was rejected (optional)</label>
-            <textarea
-              id={reasonId}
-              name="reason"
-              rows={3}
-              maxLength={MAX_PATCH_REASON_CHARS}
-              defaultValue={review?.reason ?? ''}
-              aria-describedby={reasonHintId}
-            />
-            <p id={reasonHintId} className="field__hint">
-              Up to {MAX_PATCH_REASON_CHARS} characters. Rejecting this does not dismiss the
-              finding: it stays exactly as the scanner reported it.
-            </p>
-            <div>
-              <button
-                type="submit"
-                name="decision"
-                value="rejected"
-                className="button button--danger"
-                disabled={pending}
-              >
-                {question ? 'Reject this question' : 'Reject this edit'}
-                <span className="visually-hidden"> — {about}</span>
-              </button>
+          {/*
+            In the same row as the other two, not on a line of its own: twenty proposals each
+            spending a line on a closed panel is most of a screen. It wraps to its own line
+            when it is opened.
+          */}
+          <details className="decision__panel" open={review?.decision === 'rejected'}>
+            <summary>
+              {question ? 'Reject this question' : 'Reject this edit'}
+              <span className="visually-hidden"> — {about}</span>
+            </summary>
+            <div className="decision__panel-body stack-tight">
+              <label htmlFor={reasonId}>Why it was rejected (optional)</label>
+              <textarea
+                id={reasonId}
+                name="reason"
+                rows={3}
+                maxLength={MAX_PATCH_REASON_CHARS}
+                defaultValue={review?.reason ?? ''}
+                aria-describedby={reasonHintId}
+              />
+              <p id={reasonHintId} className="field__hint">
+                Up to {MAX_PATCH_REASON_CHARS} characters. Rejecting this does not dismiss the
+                finding: it stays exactly as the scanner reported it.
+              </p>
+              <div>
+                <button
+                  type="submit"
+                  name="decision"
+                  value="rejected"
+                  className="button button--danger"
+                  disabled={pending}
+                >
+                  {question ? 'Reject this question' : 'Reject this edit'}
+                  <span className="visually-hidden"> — {about}</span>
+                </button>
+              </div>
             </div>
-          </div>
-        </details>
+            </details>
+        </div>
       </fieldset>
 
       <div aria-live="polite" className="decision__result">

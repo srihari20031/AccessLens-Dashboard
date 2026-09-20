@@ -249,13 +249,11 @@ function RunCard({ run, number }: { run: RunSummary; number: number | undefined 
               of {run.kind} runs of {run.target_url}
             </span>
           </Link>{' '}
-          · accesslens {run.tool_version}
+          · accesslens {run.tool_version} · uploaded {formatDateTime(run.created_at)}
         </div>
       </div>
 
       <BandChips counts={run.site_bands} label={`Severity band counts for ${name}`} />
-
-      <div className="xsmall muted">Uploaded {formatDateTime(run.created_at)}</div>
 
       <details>
         <summary className="small">

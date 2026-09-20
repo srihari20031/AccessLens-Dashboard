@@ -16,14 +16,18 @@ import { EMPTY_PATCH_IMPORT_STATE } from './patch-state';
  */
 export function PatchesForm({ runId, hasPatches }: { runId: string; hasPatches: boolean }) {
   const [state, formAction, pending] = useActionState(importPatches, EMPTY_PATCH_IMPORT_STATE);
+  const heading = hasPatches ? 'Replace the patch set' : 'Add the patch set';
 
   return (
-    <form action={formAction} className="sheet" aria-labelledby="patches-upload-heading">
+    // Behind a disclosure, as the report upload on the runs page is, and open when there is
+    // nothing to review yet: the proposals are what this screen is for.
+    <details className="sheet" open={!hasPatches}>
+      <summary>
+        <h2 id="patches-upload-heading">{heading}</h2>
+      </summary>
+      <form action={formAction} aria-labelledby="patches-upload-heading">
       <div className="sheet__body stack">
         <div className="stack-tight">
-          <h2 id="patches-upload-heading">
-            {hasPatches ? 'Replace the patch set' : 'Add the patch set'}
-          </h2>
           <p className="prose small muted">
             The JSON that{' '}
             <code className="mono">
@@ -84,6 +88,7 @@ export function PatchesForm({ runId, hasPatches }: { runId: string; hasPatches: 
           </button>
         </div>
       </div>
-    </form>
+      </form>
+    </details>
   );
 }
