@@ -250,7 +250,7 @@ describe('a file the CLI actually produced', () => {
       expect(entry.explanation.length).toBeGreaterThan(0);
       expect(entry.fix.length).toBeGreaterThan(0);
       expect(['low', 'medium', 'high', '']).toContain(entry.confidence);
-      expect(entry.model.length).toBeGreaterThan(0);
+      expect(entry.model ?? '').not.toBe('');
     }
   });
 });
