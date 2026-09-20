@@ -10,7 +10,7 @@ import {
   type SuggestionEntry,
 } from '@/lib/review/explanations';
 
-import { loadFixture } from './helpers';
+import { loadFixture, readFixture } from './helpers';
 
 /*
  * The explanations file is written by `accesslens explain`, which this repository does not
@@ -227,5 +227,30 @@ describe('matching entries to a run', () => {
     const { kept, unknown } = entriesForRun([ONE], hashesOfScanContrast());
     expect(kept).toHaveLength(0);
     expect(unknown).toBe(1);
+  });
+});
+
+
+/*
+ * The real thing: `examples/demo-explanations.json` as `accesslens explain` wrote it, copied
+ * into fixtures. Every entry nests the model's answer under `suggestion`, which a parser
+ * reading `explanation` from the top of the entry silently rejects in full — the file would
+ * import as "no suggestions" with nothing to show a reviewer. That is why this test exists.
+ */
+describe('a file the CLI actually produced', () => {
+  it('parses every explained entry, with its text and confidence', () => {
+    const parsed = parseExplanations(readFixture('demoExplanations'));
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.value.entries.length).toBeGreaterThan(0);
+
+    for (const entry of parsed.value.entries) {
+      expect(entry.finding_hash).toMatch(/^[0-9a-f]+$/);
+      expect(entry.explanation.length).toBeGreaterThan(0);
+      expect(entry.fix.length).toBeGreaterThan(0);
+      expect(['low', 'medium', 'high', '']).toContain(entry.confidence);
+      expect(entry.model.length).toBeGreaterThan(0);
+    }
   });
 });

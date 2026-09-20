@@ -120,9 +120,15 @@ function readEntry(hashFromKey: string | null, raw: unknown): SuggestionEntry | 
   const hash = hashFromKey ?? (typeof raw.finding_hash === 'string' ? raw.finding_hash : '');
   if (!HEX.test(hash)) return null;
 
-  const explanation = text(raw.explanation, MAX_EXPLANATION_CHARS);
-  // `fix` is what the CLI writes; `suggested_fix` is accepted as the obvious other spelling.
-  const fix = text(raw.fix ?? raw.suggested_fix, MAX_FIX_CHARS);
+  // The CLI nests the model's answer: each entry is {finding_hash, criterion, rule_version,
+  // status, reason, suggestion: {explanation, suggested_fix, confidence, model}}, and
+  // `suggestion` is null for a finding it could not explain. A flat entry is read as it
+  // comes, so both shapes work.
+  const answer = isRecord(raw.suggestion) ? raw.suggestion : raw;
+
+  const explanation = text(answer.explanation, MAX_EXPLANATION_CHARS);
+  // `suggested_fix` is what the CLI writes; `fix` is accepted as the obvious other spelling.
+  const fix = text(answer.suggested_fix ?? answer.fix, MAX_FIX_CHARS);
   // An entry with neither is nothing to review. The CLI writes null for a finding it could
   // not explain, and a row of empty strings would show as a suggestion that is not there.
   if (explanation === '' && fix === '') return null;
@@ -131,8 +137,8 @@ function readEntry(hashFromKey: string | null, raw: unknown): SuggestionEntry | 
     finding_hash: hash,
     explanation,
     fix,
-    confidence: confidenceOf(raw.confidence),
-    model: label(raw.model),
+    confidence: confidenceOf(answer.confidence),
+    model: label(answer.model ?? raw.model),
     prompt_version: label(raw.prompt_version),
     rule_version: label(raw.rule_version),
   };
