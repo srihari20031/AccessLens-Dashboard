@@ -345,6 +345,7 @@ function PatchItemView({ runId, item }: { runId: string; item: PatchItem }) {
         findingHash={patch.finding_hash}
         criterion={finding.criterion}
         where={where}
+        subject={patch.status === 'needs-input' ? 'question' : 'edit'}
         review={review}
       />
     </article>

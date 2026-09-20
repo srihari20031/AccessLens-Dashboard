@@ -11,7 +11,13 @@ import { recordPatchDecision } from './actions';
 import { EMPTY_PATCH_DECISION_STATE } from './patch-state';
 
 /**
- * Accept, reject or mark applied one proposed edit.
+ * Accept, reject or mark applied one proposed edit — or one question.
+ *
+ * A `needs-input` patch is not an edit: it is a question the tool refuses to answer for
+ * anybody. The three decisions are the same for both, because what is being recorded is the
+ * same thing — what a person decided to do about this finding's proposal — but the wording
+ * follows the subject, because "Accept this edit" over a question is a control that describes
+ * something that is not on the screen.
  *
  * The same construction as the Fix review screen's `DecisionForm`: one form with several submit
  * buttons, each carrying its own `decision` value. One tab sequence rather than three nested
@@ -27,6 +33,7 @@ export function PatchDecisionForm({
   findingHash,
   criterion,
   where,
+  subject,
   review,
 }: {
   runId: string;
@@ -35,6 +42,8 @@ export function PatchDecisionForm({
   criterion: string;
   /** Where the edit lands, e.g. "index.html line 12". */
   where: string;
+  /** What is being decided about: a proposed edit, or a question to answer. */
+  subject: 'edit' | 'question';
   review: PatchReviewRecord | null;
 }) {
   const [state, formAction, pending] = useActionState(
@@ -47,6 +56,7 @@ export function PatchDecisionForm({
 
   const about = `the patch for ${criterion} at ${where}`;
   const decided = review !== null && review.decision !== 'pending';
+  const question = subject === 'question';
 
   return (
     <form action={formAction} className="decision">
@@ -54,7 +64,7 @@ export function PatchDecisionForm({
       <input type="hidden" name="finding_hash" value={findingHash} />
 
       <fieldset className="decision__set">
-        <legend>Your decision on this proposed edit</legend>
+        <legend>Your decision on this {question ? 'question' : 'proposed edit'}</legend>
 
         <div className="row decision__buttons">
           <button
@@ -64,7 +74,7 @@ export function PatchDecisionForm({
             className="button"
             disabled={pending}
           >
-            Accept this edit
+            {question ? 'Accept this as work to do' : 'Accept this edit'}
             <span className="visually-hidden"> — {about}</span>
           </button>
           {/*
@@ -80,7 +90,7 @@ export function PatchDecisionForm({
             className="button button--quiet"
             disabled={pending}
           >
-            I have applied it
+            {question ? 'I have answered it' : 'I have applied it'}
             <span className="visually-hidden"> — {about}</span>
           </button>
           {decided ? (
@@ -99,7 +109,7 @@ export function PatchDecisionForm({
 
         <details className="decision__panel" open={review?.decision === 'rejected'}>
           <summary>
-            Reject this edit
+            {question ? 'Reject this question' : 'Reject this edit'}
             <span className="visually-hidden"> — {about}</span>
           </summary>
           <div className="decision__panel-body stack-tight">
@@ -113,7 +123,7 @@ export function PatchDecisionForm({
               aria-describedby={reasonHintId}
             />
             <p id={reasonHintId} className="field__hint">
-              Up to {MAX_PATCH_REASON_CHARS} characters. Rejecting the edit does not dismiss the
+              Up to {MAX_PATCH_REASON_CHARS} characters. Rejecting this does not dismiss the
               finding: it stays exactly as the scanner reported it.
             </p>
             <div>
@@ -124,7 +134,7 @@ export function PatchDecisionForm({
                 className="button button--danger"
                 disabled={pending}
               >
-                Reject this edit
+                {question ? 'Reject this question' : 'Reject this edit'}
                 <span className="visually-hidden"> — {about}</span>
               </button>
             </div>

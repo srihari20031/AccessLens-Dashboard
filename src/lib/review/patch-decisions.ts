@@ -22,7 +22,7 @@ export const PATCH_DECIDED: readonly PatchDecision[] = ['accepted', 'rejected', 
 /** Never colour alone: every decision is written out in words wherever it is shown. */
 export const PATCH_DECISION_LABELS: Record<PatchDecision, string> = {
   pending: 'Not yet reviewed',
-  accepted: 'Accepted as the edit to make',
+  accepted: 'Accepted as the change to make',
   rejected: 'Rejected',
   applied: 'Marked as applied in your own copy',
 };
@@ -152,7 +152,9 @@ export function describePatchDecision(
   formatted: (iso: string) => string,
 ): string {
   if (review === null || review.decision === 'pending') {
-    return 'Not yet reviewed. Nobody has accepted, rejected or applied the edit below.';
+    // "The proposal", not "the edit": a `needs-input` patch is a question, and this sentence
+    // is printed under both.
+    return 'Not yet reviewed. Nobody has accepted, rejected or applied the proposal below.';
   }
   const who = review.decided_by_email ?? 'the signed-in reviewer';
   return `${PATCH_DECISION_LABELS[review.decision]} by ${who} on ${formatted(review.decided_at)}.`;
