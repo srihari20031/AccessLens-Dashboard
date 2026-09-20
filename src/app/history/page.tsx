@@ -239,13 +239,19 @@ function SiteHistory({
                       <div className="xsmall muted">{formatDateTime(entry.run.created_at)}</div>
                     </th>
                     {BANDS.map((band) => (
-                      <td key={band} className="num">
+                      <td key={band} className="num" data-zero={entry.run.site_bands[band] === 0}>
                         {entry.run.site_bands[band]}
                       </td>
                     ))}
-                    <td className="num">{entry.change?.new ?? '—'}</td>
-                    <td className="num">{entry.change?.resolved ?? '—'}</td>
-                    <td className="num">{entry.change?.regressions ?? '—'}</td>
+                    <td className="num" data-zero={entry.change?.new === 0}>
+                      {entry.change?.new ?? '—'}
+                    </td>
+                    <td className="num" data-zero={entry.change?.resolved === 0}>
+                      {entry.change?.resolved ?? '—'}
+                    </td>
+                    <td className="num" data-zero={entry.change?.regressions === 0}>
+                      {entry.change?.regressions ?? '—'}
+                    </td>
                     <td>
                       {earlier !== undefined ? (
                         <Link href={`/compare?base=${earlier.run.id}&head=${entry.run.id}`} className="small">

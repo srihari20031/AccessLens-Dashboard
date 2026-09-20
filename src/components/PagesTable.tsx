@@ -69,11 +69,17 @@ export function PagesTable({
                 </td>
                 <td className="num">{page.http_status ?? '—'}</td>
                 {BANDS.map((band) => (
-                  <td key={band} className="num">
+                  <td
+                    key={band}
+                    className="num"
+                    data-zero={page.status === 'evaluated' && page.bands[band] === 0}
+                  >
                     {page.status === 'evaluated' ? page.bands[band] : '—'}
                   </td>
                 ))}
-                <td className="num">{page.status === 'evaluated' ? page.pass_count : '—'}</td>
+                <td className="num" data-zero={page.status === 'evaluated' && page.pass_count === 0}>
+                  {page.status === 'evaluated' ? page.pass_count : '—'}
+                </td>
               </tr>
             ))}
           </tbody>

@@ -153,12 +153,14 @@ export default async function RunsPage() {
                     </th>
                     <td>{run.kind === 'crawl' ? 'Crawl' : 'Scan'}</td>
                     {BANDS.map((band) => (
-                      <td key={band} className="num">
+                      <td key={band} className="num" data-zero={run.site_bands[band] === 0}>
                         {run.site_bands[band]}
                       </td>
                     ))}
                     <td>{formatDateTime(run.created_at)}</td>
-                    <td>
+                    {/* Without this the column collapses to its longest word and the
+                        disclosure marker sits on a line of its own above "Delete". */}
+                    <td style={{ whiteSpace: 'nowrap' }}>
                       <details>
                         {/*
                           Every row's control said only "Delete". A screen reader lists them
