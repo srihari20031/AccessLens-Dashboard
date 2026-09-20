@@ -35,7 +35,7 @@
   --rule: #c7ceda; /* hairlines */
   --rule-strong: #737f92; /* borders that carry meaning, incl. form controls (1.4.11) — 4.05:1 on sheet, 3.42:1 on ground */
   --accent: #0e5c6b; /* links, focus — 7.60:1 on sheet, 6.42:1 against ground */
-  --accent-hover: #0a4753; /* button hover — the sheet-coloured label on it is 10.30:1 */
+  --accent-hover: #0a4753; /* button hover — the sheet-coloured label on it is 10.29:1 */
   --accent-wash: #e3f0f2;
 
   --band-critical: #8e1b2b; /* 8.97:1 on sheet */
