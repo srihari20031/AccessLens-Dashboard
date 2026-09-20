@@ -155,13 +155,16 @@ body {
 
 /*
   A selection is a colour pair like any other, so it is chosen and measured like one rather
-  than left to the browser: body ink on the accent wash, 13.69:1 in light and 11.12:1 in dark.
-  The UA default is a blue that Chromium draws behind otherwise-unchanged text, which on the
-  dark sheet is the one place in this stylesheet contrast would not have been measured.
+  than left to the browser: the sheet colour on the accent, 7.60:1 in light and 8.49:1 in dark.
+
+  The accent *wash* was tried first and is the wrong tool — it is a background tint, 1.16:1
+  against the sheet in light and 1.17:1 in dark, so a selected run of text was barely
+  distinguishable from an unselected one. A selection has to be seen at a glance, and the
+  accent at full strength is the only pair here that both says "accent" and does that.
 */
 ::selection {
-  background: var(--accent-wash);
-  color: var(--ink);
+  background: var(--accent);
+  color: var(--sheet);
 }
 
 code,
