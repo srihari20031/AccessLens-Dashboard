@@ -613,8 +613,17 @@ a:hover {
   padding: var(--space-4) var(--space-5);
 }
 
+/* A visible table caption has to be shown above the cards when the table is hidden. */
+.narrow-caption {
+  display: none;
+}
+
 @media (max-width: 40rem) {
   .narrow-cards {
+    display: block;
+  }
+
+  .narrow-caption {
     display: block;
   }
 
