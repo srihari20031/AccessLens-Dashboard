@@ -849,3 +849,122 @@ input[type='number'] {
   margin: var(--space-1) 0 0;
   padding-left: var(--space-5);
 }
+
+/* ---------------------------------------------------------------- fix review
+
+   The AI text gets no status colour at all — not the review violet, not a band. It is not a
+   result, and colouring it like one would read as a verdict the model is not entitled to
+   make. It is set apart by a rule and a label that says what it is in words.
+
+   A decision is written out in the same status tag the About page uses: the word is inside
+   the tag, so nothing here depends on colour. */
+
+textarea {
+  font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: var(--size-s);
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--sheet);
+  border: 1px solid var(--rule-strong); /* 4.05:1 on the sheet — 1.4.11 */
+  border-radius: 2px;
+  padding: var(--space-2) var(--space-3);
+  width: 100%;
+  max-width: var(--measure);
+  resize: vertical;
+}
+
+.suggestion {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--sheet);
+  border: 1px solid var(--rule-strong);
+  border-left-width: 4px;
+  border-radius: 2px;
+}
+
+.suggestion > * + * {
+  margin-top: var(--space-3);
+}
+
+.suggestion__label {
+  font-size: var(--size-s);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.suggestion__meta {
+  border-top: 1px solid var(--rule);
+  padding-top: var(--space-3);
+  font-size: var(--size-xs);
+}
+
+.decision__state {
+  margin-top: var(--space-4);
+}
+
+.decision {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--rule);
+}
+
+.decision__set {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.decision__set > legend {
+  font-weight: 600;
+  font-size: var(--size-s);
+  padding: 0;
+  margin-bottom: var(--space-3);
+}
+
+.decision__buttons {
+  gap: var(--space-3);
+}
+
+.decision__panel {
+  margin-top: var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+
+.decision__panel > summary {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--size-s);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.decision__panel-body {
+  padding: 0 var(--space-3) var(--space-3);
+  border-top: 1px solid var(--rule);
+  padding-top: var(--space-3);
+}
+
+.decision__result {
+  margin-top: var(--space-3);
+}
+
+.decision__result:empty {
+  margin-top: 0;
+}
+
+/* Decided one way or another reads as a firm edge; not yet reviewed reads as an open one.
+   The word is inside the tag either way, so the border is a repetition, never the signal. */
+.status-tag[data-decision='accepted'],
+.status-tag[data-decision='edited'] {
+  border-width: 2px;
+}
+
+.status-tag[data-decision='rejected'] {
+  border-width: 2px;
+  border-style: dashed;
+}
+
+.status-tag[data-decision='pending'] {
+  border-style: dashed;
+  color: var(--ink-soft); /* 7.54:1 on the sheet */
+}

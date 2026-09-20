@@ -96,7 +96,7 @@ export default function AboutPage() {
             <div className="row" style={{ justifyContent: 'space-between' }}>
               <h3>Language model layer (optional)</h3>
               <span className="status-tag" data-status="Built">
-                Built (command line)
+                Built (drafted on the command line)
               </span>
             </div>
             <p className="small">
@@ -104,8 +104,10 @@ export default function AboutPage() {
               explanations with a suggested fix, including draft alt text, shown in the HTML and PDF
               report as suggestions to review before use. Cached by finding identity, so the wording
               never changes between runs. It never detects a problem and never changes a band, and
-              every report is complete with it switched off. Accepting, editing or rejecting a
-              suggestion in this dashboard is not built yet.
+              every report is complete with it switched off. Upload what it writes on a run&rsquo;s
+              fix review screen, and each suggestion can be accepted, edited or rejected there —
+              a judgement about the wording, recorded against the finding, which leaves the
+              finding&rsquo;s outcome, severity and band exactly as the scanner reported them.
             </p>
           </div>
         </div>

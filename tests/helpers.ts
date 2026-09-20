@@ -15,6 +15,7 @@ import { parseReport, type ParsedReport } from '@/lib/report/schema';
 export const FIXTURES = {
   scanIndex: 'scan-index.json',
   scanContrast: 'scan-contrast.json',
+  demoExplanations: 'demo-explanations.json',
   scanNonTextContrast: 'scan-non-text-contrast.json',
   crawlSmallSite: 'crawl-small-site.json',
   scanKeyboardTrap: 'scan-keyboard-trap.json',
