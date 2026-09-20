@@ -22,6 +22,10 @@ most of the design decisions below follow from it.
 - **About** (public) — the pipeline with what is built today, the three defining decisions, and
   what each kind of target supports.
 - Each finding shows its **source location**, or says plainly that it is not mapped.
+- **Fix review** — for a run, every finding that carries AI text from `accesslens explain`,
+  with the model's explanation, its suggested fix and its stated confidence, and a decision
+  per suggestion: accept, edit or reject. The run's page shows the counts. See
+  [Fix review](#fix-review).
 - A **keyboard trap finding (2.1.2)** shows the focus order the scanner recorded: every stop
   in order, the loop focus got caught in, and the elements it never reached, with Replay and
   Step controls. It needs reports from rule `no-keyboard-trap` 1.1.0 or later; older reports
@@ -52,6 +56,7 @@ supabase/migrations/0001_schema.sql          -- tables, indexes, RLS policies
 supabase/migrations/0002_import_run.sql      -- the transactional import function
 supabase/migrations/0003_source_location.sql -- keeps each finding's source location
 supabase/migrations/0004_scan_jobs.sql       -- audit jobs, only needed for Run audit
+supabase/migrations/0005_fix_reviews.sql     -- AI suggestions and fix-review decisions
 ```
 
 `0003` is safe on a project that already has runs. Until it is applied, uploads still work
@@ -161,6 +166,59 @@ Open results  → openAuditResults: parseReport → toImportPayload → import_r
 - The logic is in `src/lib/audit/` (validation, status wording, the worker call), unit-tested;
   database access is `src/lib/db/jobs.ts`.
 
+## Fix review
+
+`accesslens explain <report.json> --out explanations.json` asks a language model for a
+plain-language explanation and a suggested fix for each non-passing finding, and labels every
+one of them "AI suggestion — review before use". The project brief asks for the other half of
+that: somebody has to *do* the reviewing. That is this screen, at **Fix review** on a run's
+page (`/runs/<id>/review`).
+
+**The boundary, which the screen states in its own words.** A decision records what a person
+thinks of the *suggested text*. It changes nothing about the finding: outcome, severity and
+band are the scanner's, and no code path leads from a decision to any of them. Rejecting a
+suggestion does not dismiss the problem; accepting one does not fix it. `run_findings` is
+never written to by anything in `src/lib/db/reviews.ts`, and the review tables carry no
+outcome, severity or band column at all.
+
+**Setup.** Run `supabase/migrations/0005_fix_reviews.sql` in the Supabase SQL editor. It adds
+two tables with row-level security in the shape 0001 uses — reachable only through one of your
+own runs — and is safe on a project that already holds runs. Until it has been run the rest of
+the dashboard works unchanged, and the review screen says which file to run.
+
+**The workflow.**
+
+```
+accesslens explain report.json --out explanations.json      (command line, optional extra)
+   → upload it on the run's Fix review screen
+   → run_suggestions, matched to findings by finding_hash
+   → accept / edit / reject per suggestion → fix_reviews
+   → counts on the run page
+```
+
+- Suggestions are matched to findings by `finding_hash`. A file made from another report
+  brings nothing over, and the screen says so rather than storing it: `run_suggestions` has a
+  foreign key onto `run_findings (run_id, finding_hash)`, so a stored suggestion always points
+  at a finding that really is in that run, and both go when the run does.
+- **Accept** records the text as written. **Edit** saves your own wording alongside the
+  model's — the model's text is never overwritten, so the two can be compared later. **Reject**
+  takes an optional reason. **Clear this decision** puts the suggestion back to not yet
+  reviewed.
+- `edited_fix` exists only for an `edited` decision and `reason` only for a `rejected` one,
+  enforced by check constraints, so a stale draft can never be displayed as something that was
+  accepted.
+- **Who decided and when are the server's to write.** A trigger stamps `decided_by`,
+  `decided_by_email` and `decided_at` from the caller's own token and the database clock, so
+  no form field decides what the record says about who signed it.
+- Re-uploading the explanations file replaces the text in place and leaves every decision
+  alone. A decision made before the text arrived is shown with a line saying so — deleting
+  somebody's judgement because a model was re-run would be worse than saying it is stale.
+- The parser is tolerant about the *shape* of the explanations file (a list, a `suggestions`
+  or `explanations` list, or an object keyed by hash) and strict about every *value*: a hash
+  that is not lowercase hex, a confidence outside low/medium/high, or a value of the wrong type
+  is dropped and counted, never guessed. The logic is `src/lib/review/`, unit-tested;
+  database access is `src/lib/db/reviews.ts`.
+
 ## Checks
 
 ```bash
@@ -259,9 +317,8 @@ an accessibility tool would be the overstatement the brief forbids:
 
 - **Running a scan inside the dashboard** — Chromium does not run on a typical Next.js host;
   Run audit hands the scan to a separate worker instead, and is hidden without one.
-- **Fix review** (patch before/after, accept/edit/reject) — Phase 5; no finding has a source
-  location to patch yet.
-- **AI-drafted text with a confidence value** — Phase 6c.
+- **A source patch, before and after** — Phase 5. Fix review is built (below), but it reviews
+  the AI's *text*; nothing generates a diff against your file, and no patch is applied anywhere.
 - **Focus-order replay** — needs rule 2.1.2 and the focus-traversal provider.
 - **HTML/PDF export** — Phase 4. **The pull-request comment** — Phase 6b, a GitHub Action.
 - **A single "rule-set v1.3"** — the CLI records a version per rule (project plan D4), and
@@ -279,6 +336,11 @@ instrumenting the templates, where the mockup says "best effort".
   is no `dangerouslySetInnerHTML` anywhere in this project, and there must not be.
 - Two invariants from the Python model are re-checked at upload rather than trusted: pass ⟺ no
   severity, and a schema-2 finding's `band` matching its outcome.
+- **The AI text is untrusted twice over.** A suggestion was written by a model that was shown
+  markup taken from a scanned page, so both the page and the model are treated as hostile: the
+  explanation, the suggested fix and the reviewer's own edit are all rendered as text, every
+  value is length-capped and type-checked before it is stored, and a suggested fix — usually a
+  fragment of HTML — is shown in a `<code>` block, never as markup.
 - **Findings are read in pages of 1000.** Supabase returns at most 1000 rows per request and
   says nothing when it stops, so a larger crawl would otherwise lose findings silently.
 
@@ -304,6 +366,14 @@ It is an accessibility tool, so it has to survive its own rules. What was done d
   ground, above the 3:1 that rule 1.4.11 requires. It was `#94a0b4` at first, commented as
   3.1:1; crawling the running dashboard with AccessLens measured 2.64:1 and 2.23:1 and failed
   every input and select, which is how it was caught.
+- **Fix review is one tab sequence per finding.** The decision controls are a single form with
+  several submit buttons, and the edit and reject panels are `<details>` elements, so nothing
+  needs JavaScript to open, reach or operate. Every textarea has a real `<label>` and a hint
+  tied to it with `aria-describedby`; each repeated button carries a visually-hidden phrase
+  naming the finding it acts on, so "Accept as written" is never read out on its own. The
+  state of each decision is a word inside its tag, not a colour, and the AI block is given no
+  status colour at all — it is not a result, and colouring it like one would read as a verdict
+  the model is not entitled to make.
 - Motion: none. `prefers-reduced-motion` is honoured anyway.
 - Live regions announce upload and sign-in results rather than only showing them.
 
@@ -332,3 +402,12 @@ Sign out, Delete or Upload.
 - **Dates are formatted in the server's timezone**, since the pages render on the server.
 - **Deleting a run is immediate**, behind a disclosure rather than a modal. There is no undo; the
   report file on your machine is the only other copy.
+- **Fix review has one reviewer per finding**, not a queue with a second opinion: a decision
+  replaces whatever was there. Each run has its own decisions, so the same problem reviewed on
+  run #4 is "not yet reviewed" again on run #5, since a run's findings are what a decision
+  hangs off. There is no audit trail of who decided what before the current decision.
+- **Explanations are uploaded per run**, by hand, like reports. Re-uploading replaces the text
+  and keeps every decision; a decision older than the text it is attached to is marked as such
+  rather than cleared.
+- **Nothing verifies a suggested fix.** It is a draft written by a model that saw the finding's
+  JSON and never the page. Accepting one records that a person read it, and nothing more.
