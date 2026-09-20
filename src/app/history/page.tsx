@@ -10,7 +10,6 @@ import { formatDateTime, pluralise } from '@/lib/format';
 import { historyHref } from '@/lib/links';
 import { isConfigured } from '@/lib/supabase/config';
 
-export const metadata: Metadata = { title: 'History' };
 
 /*
  * Never prerendered. These pages show one user's data, and what they show depends on the
@@ -24,6 +23,23 @@ type Search = Record<string, string | string[] | undefined>;
 
 function one(value: string | string[] | undefined): string {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
+}
+
+/*
+ * One site's history is a different page from the index of sites, and from another site's
+ * history, so it says which site it is (2.4.2). The URL is read straight from the query —
+ * no database work for a title — and is shown as text, never as a link.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Search>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const url = one(params.url);
+  const kind = one(params.kind);
+  if (url === '' || (kind !== 'scan' && kind !== 'crawl')) return { title: 'History' };
+  return { title: `History — ${kind === 'crawl' ? 'crawls' : 'scans'} of ${url}` };
 }
 
 export default async function HistoryPage({ searchParams }: { searchParams: Promise<Search> }) {

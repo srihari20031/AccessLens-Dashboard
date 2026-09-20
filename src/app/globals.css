@@ -474,7 +474,18 @@ a:hover {
   font-variant-numeric: tabular-nums;
 }
 
+/*
+  `position: relative` here is load-bearing, not decoration.
+
+  `.visually-hidden` is `position: absolute` with no offsets, so without a positioned
+  ancestor its containing block is the initial containing block rather than this scroller.
+  A hidden "Actions" column header sitting 900px along a horizontally scrolled table was
+  therefore laid out against the viewport and stretched the document to 887px at a 320px
+  viewport: the whole page scrolled sideways, with nothing out there to read
+  (WCAG 1.4.10 Reflow). Positioning the scroller keeps its own hidden text inside it.
+*/
 .table-scroll {
+  position: relative;
   overflow-x: auto;
 }
 
@@ -603,6 +614,17 @@ input[type='number'] {
   border-color: var(--rule-strong);
   color: var(--ink-soft);
   cursor: not-allowed;
+}
+
+/*
+  A disclosure triangle is a pointer target, and most of ours carry `.small` text: 14.4px
+  at line-height 1.55 is a 22px box, under the 24px WCAG 2.2 asks for in 2.5.8 Target Size
+  (Minimum). The padding is the whole fix; the marker stays because the display type does.
+*/
+summary {
+  cursor: pointer;
+  min-height: 1.5rem;
+  padding-block: var(--space-1);
 }
 
 .filters {

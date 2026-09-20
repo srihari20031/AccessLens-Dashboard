@@ -1,4 +1,8 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+
+/** Without this the page is titled just "AccessLens", the layout's default (2.4.2). */
+export const metadata: Metadata = { title: 'Not found' };
 
 export default function NotFound() {
   return (

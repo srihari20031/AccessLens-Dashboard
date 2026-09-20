@@ -46,6 +46,11 @@ export function SignInForm({ next }: { next: string }) {
 
       <div className="field">
         <label htmlFor="password">Password</label>
+        {/*
+          `aria-describedby` is what makes the hint below an instruction (3.3.2) rather than
+          decoration: without it the minimum length is stated on screen and nowhere else,
+          which is exactly the failure this tool reports on other people's forms.
+        */}
         <input
           id="password"
           name="password"
@@ -53,6 +58,7 @@ export function SignInForm({ next }: { next: string }) {
           autoComplete="current-password"
           required
           minLength={8}
+          aria-describedby="password-hint"
         />
         <p id="password-hint" className="field__hint">
           At least 8 characters.
