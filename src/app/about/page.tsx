@@ -47,10 +47,10 @@ const STAGES: { name: string; status: Status; does: string; today: string }[] = 
   },
   {
     name: 'Reporter',
-    status: 'Partly built',
+    status: 'Built',
     does: 'Turns findings into something a site owner can act on.',
     today:
-      'A canonical JSON report, this dashboard, and an HTML and PDF report with a plain-language explanation for every criterion that has a problem, a line and column for each finding when a local HTML file is scanned, and an optional section on what changed since the previous run. Reviewable source patches are planned.',
+      'A canonical JSON report, this dashboard, and an HTML and PDF report with a plain-language explanation for every criterion that has a problem, a line and column for each finding, and an optional section on what changed since the previous run. On the command line it also proposes source patches: a unified diff you can preview, apply with a backup, and undo. Where only a person can decide — what an image shows, what a link promises, which colour to use instead — it asks a plain question rather than writing an edit, and you review both here.',
   },
 ];
 
@@ -172,19 +172,17 @@ export default function AboutPage() {
             </thead>
             <tbody>
               <tr>
-                <th scope="row">Live URL (static HTML, server-rendered or client-rendered)</th>
+                <th scope="row">Live URL (static HTML or server-rendered)</th>
                 <td>Yes, today</td>
-                <td>Not mapped today. Every current finding says so.</td>
+                <td>
+                  Yes: line and column in the HTML the server sent, wherever the rendered
+                  page still matches it. Anything a script changed stays unmapped and says so.
+                </td>
               </tr>
               <tr>
                 <th scope="row">Static HTML file on disk</th>
                 <td>Yes, from the command line</td>
-                <td>Yes: exact line and column (command line)</td>
-              </tr>
-              <tr>
-                <th scope="row">Live URL with the repository available locally</th>
-                <td>Planned</td>
-                <td>Planned: best effort, only where one source element matches</td>
+                <td>Yes: exact line and column, and reviewable source patches</td>
               </tr>
               <tr>
                 <th scope="row">Client-rendered app (React, Vue, Angular)</th>
