@@ -16,7 +16,7 @@ import {
   type PatchEntry,
 } from '@/lib/review/patches';
 
-import { loadFixture } from './helpers';
+import { loadFixture , readFixture } from './helpers';
 
 /*
  * The patch file is written by `accesslens fix`, which this repository does not hold a sample
@@ -261,5 +261,40 @@ describe('a patch file belongs to the run it was made from', () => {
     const { kept, unknown } = patchesForRun([READY as PatchEntry], hashesOfScanIndex());
     expect(kept).toEqual([]);
     expect(unknown).toBe(1);
+  });
+});
+
+
+/*
+ * The real thing: `accesslens fix examples/demo-report.json --json` as the CLI wrote it.
+ * The parser is written to a contract, and a contract nobody has checked against real
+ * output is a guess — reading an explanations file the same way turned out to be wrong
+ * about where the text sits. So this parses what the tool actually produces.
+ */
+describe('a patch file the CLI actually produced', () => {
+  it('parses, with every status the tool emits carried through', () => {
+    const parsed = parsePatches(readFixture('demoPatches'));
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    const patches = parsed.value.entries;
+    expect(patches.length).toBeGreaterThan(0);
+    expect(parsed.value.skipped).toBe(0);
+
+    for (const patch of patches) {
+      expect(patch.finding_hash).toMatch(/^[0-9a-f]+$/);
+      expect(patch.start_line).toBeGreaterThanOrEqual(1);
+      expect(patch.start_column).toBeGreaterThanOrEqual(1);
+      expect(['rule', 'ai']).toContain(patch.source);
+    }
+
+    // A ready patch really carries an edit; a needs-input one really carries a question.
+    const ready = patches.filter((patch) => patch.status === 'ready');
+    const asking = patches.filter((patch) => patch.status === 'needs-input');
+    expect(ready.length).toBeGreaterThan(0);
+    expect(asking.length).toBeGreaterThan(0);
+    for (const patch of ready) expect(patch.new_text).not.toBe('');
+    for (const patch of asking) expect((patch.question ?? '').length).toBeGreaterThan(0);
   });
 });

@@ -12,15 +12,29 @@ import { parseReport, type ParsedReport } from '@/lib/report/schema';
  * act: several tests below assert the counts these particular files contain, which is what
  * makes them a regression test of the mapping rather than a restatement of it.
  */
-export const FIXTURES = {
+/** Saved scan and crawl reports: every one of these must validate as a report. */
+export const REPORT_FIXTURES = {
   scanIndex: 'scan-index.json',
   scanContrast: 'scan-contrast.json',
-  demoExplanations: 'demo-explanations.json',
   scanNonTextContrast: 'scan-non-text-contrast.json',
   crawlSmallSite: 'crawl-small-site.json',
   scanKeyboardTrap: 'scan-keyboard-trap.json',
 } as const;
 
+/*
+ * The CLI's other outputs, which are not reports and carry no `schema_version`:
+ * `accesslens explain --out` and `accesslens fix --json`. They live here so the
+ * importers are tested against what the tool really writes rather than against a
+ * hand-built guess — reading an explanations file the wrong way was a real bug.
+ */
+export const DATA_FIXTURES = {
+  demoExplanations: 'demo-explanations.json',
+  demoPatches: 'demo-patches.json',
+} as const;
+
+export const FIXTURES = { ...REPORT_FIXTURES, ...DATA_FIXTURES } as const;
+
+export type ReportFixtureName = keyof typeof REPORT_FIXTURES;
 export type FixtureName = keyof typeof FIXTURES;
 
 const fixturesDir = fileURLToPath(new URL('../fixtures/', import.meta.url));

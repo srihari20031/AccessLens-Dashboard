@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { parseReport, parseReportText } from '@/lib/report/schema';
 
-import { FIXTURES, mutate, readFixture, type FixtureName } from './helpers';
+import { REPORT_FIXTURES, mutate, readFixture, type ReportFixtureName } from './helpers';
 
 function expectRejected(input: unknown): { message: string; issues: string[] } {
   const result = parseReport(input);
@@ -11,7 +11,7 @@ function expectRejected(input: unknown): { message: string; issues: string[] } {
 }
 
 describe('the committed sample reports', () => {
-  const scans: FixtureName[] = ['scanIndex', 'scanContrast', 'scanNonTextContrast'];
+  const scans: ReportFixtureName[] = ['scanIndex', 'scanContrast', 'scanNonTextContrast'];
 
   it.each(scans)('validates %s as a scan', (name) => {
     const result = parseReport(readFixture(name));
@@ -170,7 +170,7 @@ describe('field-level checks', () => {
 describe('the fixture set itself', () => {
   it('covers both schema versions', () => {
     const versions = new Set(
-      (Object.keys(FIXTURES) as FixtureName[]).map(
+      (Object.keys(REPORT_FIXTURES) as ReportFixtureName[]).map(
         (name) => (readFixture(name) as { schema_version: number }).schema_version,
       ),
     );
