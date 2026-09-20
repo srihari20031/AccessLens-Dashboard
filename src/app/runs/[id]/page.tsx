@@ -5,11 +5,14 @@ import { notFound } from 'next/navigation';
 import { BandSentence, BandStrip } from '@/components/BandStrip';
 import { FindingsSection, readFilters } from '@/components/FindingsSection';
 import { PagesTable, type NotVisited, type SkippedEntry } from '@/components/PagesTable';
+import { PatchSummary } from '@/components/PatchSummary';
 import { ReviewSummary } from '@/components/ReviewSummary';
 import { SetupNotice } from '@/components/SetupNotice';
+import { loadPatchData } from '@/lib/db/patches';
 import { loadReviewData } from '@/lib/db/reviews';
 import { listRuns, loadRun, loadRunSummary } from '@/lib/db/runs';
 import { countDecisions, reviewedTotal } from '@/lib/review/decisions';
+import { countPatchDecisions, patchesReviewedTotal } from '@/lib/review/patch-decisions';
 import { bandDelta, numberRuns, previousRun } from '@/lib/report/history';
 import { historyHref } from '@/lib/links';
 import { formatDateTime, pluralise } from '@/lib/format';
@@ -102,7 +105,11 @@ export default async function RunPage({
   const meta = readMeta(run.run_meta);
   const isCrawl = run.kind === 'crawl';
 
-  const [allRuns, reviewData] = await Promise.all([listRuns(), loadReviewData(id)]);
+  const [allRuns, reviewData, patchData] = await Promise.all([
+    listRuns(),
+    loadReviewData(id),
+    loadPatchData(id),
+  ]);
   const numbers = numberRuns(allRuns);
   const number = numbers.get(run.id);
   const previous = previousRun(allRuns, run.id);
@@ -203,6 +210,12 @@ export default async function RunPage({
         data={reviewData}
       />
 
+      <SourcePatchesSection
+        runId={run.id}
+        findingHashes={findings.map((finding) => finding.finding_hash)}
+        data={patchData}
+      />
+
       <FindingsSection findings={findings} filters={filters} action={`/runs/${run.id}`} />
 
       <section aria-labelledby="how-heading" className="stack-tight">
@@ -295,6 +308,73 @@ function FixReviewSection({
           <ReviewSummary
             counts={counts}
             caption="Decisions recorded on this run's AI suggestions"
+          />
+        </>
+      )}
+    </section>
+  );
+}
+
+/*
+ * What `accesslens fix` proposed for this run, and what a person decided about it, without
+ * opening the patch screen.
+ *
+ * Counts only, and the same rule as the section above: a decision is about a proposed edit,
+ * never about a finding, so nothing here is added to, subtracted from or shown beside a band
+ * count. Nothing on the patch screen edits a file either, which is why this section says so
+ * in the one sentence it has.
+ */
+function SourcePatchesSection({
+  runId,
+  findingHashes,
+  data,
+}: {
+  runId: string;
+  findingHashes: string[];
+  data: Awaited<ReturnType<typeof loadPatchData>>;
+}) {
+  // Migration 0006 has not been run. The run page says nothing about it: the patch screen is
+  // where that is explained, and a nag on every run page would be noise. The same silence the
+  // fix-review section keeps about 0005.
+  if (data === null) return null;
+
+  const withPatch = findingHashes.filter((hash) =>
+    data.patches.some((patch) => patch.finding_hash === hash),
+  );
+  const counts = countPatchDecisions(withPatch, data.reviews);
+  const questions = data.patches.filter((patch) => patch.status === 'needs-input').length;
+  const ready = data.patches.filter((patch) => patch.status === 'ready').length;
+
+  return (
+    <section aria-labelledby="patches-heading" className="stack-tight">
+      <div className="page-head" style={{ marginBottom: 0 }}>
+        <h2 id="patches-heading">Source patches</h2>
+        <Link href={`/runs/${runId}/patches`} className="button button--quiet">
+          {withPatch.length === 0 ? 'Open source patches' : 'Review the proposed edits'}
+          <span className="visually-hidden"> for this run</span>
+        </Link>
+      </div>
+      {withPatch.length === 0 ? (
+        <p className="prose small muted">
+          This run carries no patch set. <code className="mono">accesslens fix</code> turns a
+          scan of a local HTML file into proposed edits, and into questions where no machine
+          should choose the answer; upload what it writes on the source patches screen, and
+          accept, reject or mark each one applied there. Nothing you decide there changes a
+          finding, and nothing there edits a file.
+        </p>
+      ) : (
+        <>
+          <p className="prose small muted">
+            {patchesReviewedTotal(counts)} of {withPatch.length}{' '}
+            {pluralise(withPatch.length, 'proposal has', 'proposals have')} been reviewed by a
+            person: {ready} {pluralise(ready, 'edit', 'edits')} ready to make and {questions}{' '}
+            {pluralise(questions, 'question', 'questions')} to answer. These are decisions about
+            the proposed edits only — no finding&rsquo;s outcome, severity or band is affected
+            by them, and no file is changed by them.
+          </p>
+          <PatchSummary
+            counts={counts}
+            caption="Decisions recorded on this run's proposed source edits"
           />
         </>
       )}
